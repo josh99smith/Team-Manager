@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// Roles: HEAD_COACH | ASSISTANT | POSITION_COACH  (SQLite has no enums)
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  name          String
+  passwordHash  String
+  role          String   @default("ASSISTANT")
+  positionGroup String?
+  createdAt     DateTime @default(now())
+  tasks         Task[]   @relation("TaskAssigneeUser")
+}
+
+model Team {
+  id     String @id @default(cuid())
+  name   String
+  sport  String @default("Football")
+  season String @default("")
+}
+
+// Status: ACTIVE | INJURED | ARCHIVED
+model Player {
+  id             String       @id @default(cuid())
+  firstName      String
+  lastName       String
+  jersey         Int?
+  positions      String       @default("") // comma-separated, e.g. "QB,WR"
+  heightIn       Int?
+  weightLb       Int?
+  birthdate      DateTime?
+  classYear      String?
+  email          String?
+  phone          String?
+  emergencyName  String?
+  emergencyPhone String?
+  status         String       @default("ACTIVE")
+  notes          String       @default("")
+  createdAt      DateTime     @default(now())
+  attendance     Attendance[]
+  tasks          Task[]       @relation("TaskAssigneePlayer")
+}
+
+// Type: PRACTICE | GAME | SCRIMMAGE | MEETING | WORKOUT
+model Event {
+  id           String       @id @default(cuid())
+  type         String       @default("PRACTICE")
+  title        String       @default("")
+  startsAt     DateTime
+  endsAt       DateTime?
+  location     String       @default("")
+  opponent     String?
+  notes        String       @default("")
+  recurrenceId String? // shared id linking instances of a recurring series
+  createdAt    DateTime     @default(now())
+  attendance   Attendance[]
+  tasks        Task[]
+}
+
+// Status: PRESENT | LATE | EXCUSED | ABSENT
+model Attendance {
+  id       String @id @default(cuid())
+  playerId String
+  eventId  String
+  status   String @default("PRESENT")
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, eventId])
+}
+
+// Status: OPEN | IN_PROGRESS | DONE
+model Task {
+  id               String    @id @default(cuid())
+  title            String
+  description      String    @default("")
+  dueDate          DateTime?
+  status           String    @default("OPEN")
+  assigneeUserId   String?
+  assigneePlayerId String?
+  eventId          String?
+  createdAt        DateTime  @default(now())
+  assigneeUser     User?     @relation("TaskAssigneeUser", fields: [assigneeUserId], references: [id], onDelete: SetNull)
+  assigneePlayer   Player?   @relation("TaskAssigneePlayer", fields: [assigneePlayerId], references: [id], onDelete: SetNull)
+  event            Event?    @relation(fields: [eventId], references: [id], onDelete: SetNull)
+}

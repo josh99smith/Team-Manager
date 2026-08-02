@@ -1,0 +1,107 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { deleteEvent } from "@/lib/actions/events";
+import { EVENT_TYPE_LABELS, EVENT_TYPE_COLORS } from "@/lib/constants";
+import { formatDateTime, formatTime } from "@/lib/format";
+import { AttendanceGrid } from "@/components/attendance-grid";
+import { ConfirmButton } from "@/components/confirm-button";
+
+export default async function EventPage(props: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await props.params;
+  const event = await prisma.event.findUnique({
+    where: { id },
+    include: { attendance: true },
+  });
+  if (!event) notFound();
+
+  const players = await prisma.player.findMany({
+    where: { status: { in: ["ACTIVE", "INJURED"] } },
+    orderBy: [{ jersey: "asc" }, { lastName: "asc" }],
+  });
+
+  const statusByPlayer = Object.fromEntries(
+    event.attendance.map((a) => [a.playerId, a.status])
+  );
+
+  const title =
+    event.title ||
+    (event.type === "GAME" && event.opponent
+      ? `vs ${event.opponent}`
+      : EVENT_TYPE_LABELS[event.type] ?? event.type);
+
+  return (
+    <div>
+      <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
+        <div>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-bold">{title}</h1>
+            <span className={`badge ${EVENT_TYPE_COLORS[event.type] ?? ""}`}>
+              {EVENT_TYPE_LABELS[event.type] ?? event.type}
+            </span>
+          </div>
+          <p className="text-slate-500 mt-1">
+            {formatDateTime(event.startsAt)}
+            {event.endsAt ? ` – ${formatTime(event.endsAt)}` : ""}
+            {event.location ? ` · ${event.location}` : ""}
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <Link href={`/events/${event.id}/edit`} className="btn-secondary">
+            Edit
+          </Link>
+          <ConfirmButton
+            action={deleteEvent.bind(null, event.id, "one")}
+            confirmText="Delete this event? Attendance records for it will be removed."
+          >
+            Delete
+          </ConfirmButton>
+          {event.recurrenceId && (
+            <ConfirmButton
+              action={deleteEvent.bind(null, event.id, "series")}
+              confirmText="Delete ALL events in this recurring series? This cannot be undone."
+            >
+              Delete series
+            </ConfirmButton>
+          )}
+        </div>
+      </div>
+
+      {event.notes && (
+        <div className="card p-6 mb-6">
+          <h2 className="font-semibold mb-2">Notes / plan</h2>
+          <p className="text-sm whitespace-pre-wrap text-slate-700">
+            {event.notes}
+          </p>
+        </div>
+      )}
+
+      <div className="card p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold">Attendance</h2>
+          <span className="text-sm text-slate-500">
+            {event.attendance.length}/{players.length} marked
+          </span>
+        </div>
+        {players.length === 0 ? (
+          <p className="text-sm text-slate-400">
+            No active players on the roster yet.
+          </p>
+        ) : (
+          <AttendanceGrid
+            eventId={event.id}
+            players={players.map((p) => ({
+              id: p.id,
+              name: `${p.firstName} ${p.lastName}`,
+              jersey: p.jersey,
+              positions: p.positions,
+            }))}
+            statusByPlayer={statusByPlayer}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
