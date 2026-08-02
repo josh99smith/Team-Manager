@@ -18,7 +18,7 @@ export default async function StaffPage() {
     <div>
       <h1 className="text-2xl font-bold mb-6">Coaching staff</h1>
 
-      <div className="grid md:grid-cols-2 gap-6 items-start">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
         <div className="card divide-y divide-slate-100">
           {users.map((u) => (
             <div key={u.id} className="p-4 flex items-center justify-between gap-3">

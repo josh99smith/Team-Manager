@@ -51,7 +51,7 @@ export function RatingEditor({
 
   return (
     <div>
-      <div className="grid sm:grid-cols-2 gap-x-8 gap-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
         {groups.map((g) => (
           <div key={g.category}>
             <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-2">

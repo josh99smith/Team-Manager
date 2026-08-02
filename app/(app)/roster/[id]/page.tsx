@@ -153,7 +153,7 @@ export default async function PlayerPage(props: {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="card p-6 space-y-3">
           <h2 className="font-semibold">Bio</h2>
           <dl className="text-sm space-y-2">
@@ -285,7 +285,7 @@ export default async function PlayerPage(props: {
         </div>
       )}
 
-      <div className="grid md:grid-cols-2 gap-6 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
         <div className="card p-6">
           <h2 className="font-semibold mb-3">OVR trend</h2>
           <TrendChart points={trendPoints} />

@@ -61,7 +61,7 @@ export default async function WeightsPage(props: {
       </div>
 
       <form action={saveWeights.bind(null, position)} className="max-w-3xl">
-        <div className="card p-6 grid sm:grid-cols-2 gap-x-8 gap-y-6 mb-4">
+        <div className="card p-6 grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6 mb-4">
           {categories.map((cat) => (
             <div key={cat.name}>
               <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-2">

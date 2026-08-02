@@ -89,7 +89,7 @@ export default async function TasksPage() {
         </form>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {TASK_STATUSES.map((status) => (
           <div key={status}>
             <h2 className="text-sm font-semibold text-slate-500 mb-3">
