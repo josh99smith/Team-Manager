@@ -108,7 +108,12 @@ export default async function EventPage(props: {
             {event.location ? ` · ${event.location}` : ""}
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {(event.type === "GAME" || event.type === "SCRIMMAGE") && (
+            <Link href={`/events/${event.id}/live`} className="btn-primary">
+              ⚡ Live stats
+            </Link>
+          )}
           <Link href={`/events/${event.id}/edit`} className="btn-secondary">
             Edit
           </Link>
@@ -217,12 +222,20 @@ export default async function EventPage(props: {
 
       {(event.type === "GAME" || event.type === "SCRIMMAGE") && (
         <div className="card p-6 mt-6">
-          <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center justify-between mb-2 gap-2 flex-wrap">
             <h2 className="font-semibold">Stat book</h2>
-            <span className="text-sm text-slate-500">
-              {event.statLines.filter((s) => s.statsJson !== "{}").length}/
-              {gradablePlayers.length} entered
-            </span>
+            <div className="flex items-center gap-3">
+              <Link
+                href={`/events/${event.id}/live`}
+                className="text-sm text-slate-500 hover:underline"
+              >
+                ⚡ Live entry →
+              </Link>
+              <span className="text-sm text-slate-500">
+                {event.statLines.filter((s) => s.statsJson !== "{}").length}/
+                {gradablePlayers.length} entered
+              </span>
+            </div>
           </div>
           {gradablePlayers.length === 0 ? (
             <p className="text-sm text-slate-400">No players to track.</p>
