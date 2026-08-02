@@ -4,6 +4,8 @@ import { TASK_STATUSES, TASK_STATUS_LABELS, EVENT_TYPE_LABELS } from "@/lib/cons
 import { formatDate, formatShortDate } from "@/lib/format";
 import { ConfirmButton } from "@/components/confirm-button";
 import { SubmitButton } from "@/components/submit-button";
+import { PageHeader } from "@/components/page-header";
+import { Avatar } from "@/components/avatar";
 
 export default async function TasksPage() {
   const [tasks, users, players, upcomingEvents] = await Promise.all([
@@ -30,7 +32,7 @@ export default async function TasksPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Tasks</h1>
+      <PageHeader title="Tasks" />
 
       <div className="card p-6 mb-8 max-w-2xl">
         <h2 className="font-semibold mb-4">New task</h2>
@@ -110,12 +112,21 @@ export default async function TasksPage() {
                       {t.description}
                     </p>
                   )}
-                  <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2 text-xs text-slate-500">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 mt-2 text-xs text-slate-500">
                     {t.dueDate && <span>Due {formatDate(t.dueDate)}</span>}
-                    {t.assigneeUser && <span>→ {t.assigneeUser.name}</span>}
+                    {t.assigneeUser && (
+                      <span className="flex items-center gap-1.5">
+                        <Avatar name={t.assigneeUser.name} size="sm" />
+                        {t.assigneeUser.name}
+                      </span>
+                    )}
                     {t.assigneePlayer && (
-                      <span>
-                        → {t.assigneePlayer.firstName} {t.assigneePlayer.lastName}
+                      <span className="flex items-center gap-1.5">
+                        <Avatar
+                          name={`${t.assigneePlayer.firstName} ${t.assigneePlayer.lastName}`}
+                          size="sm"
+                        />
+                        {t.assigneePlayer.firstName} {t.assigneePlayer.lastName}
                       </span>
                     )}
                     {t.event && (

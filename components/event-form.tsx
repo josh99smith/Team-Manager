@@ -143,7 +143,7 @@ export function EventForm({
                   {WEEKDAYS.map((d) => (
                     <label
                       key={d.value}
-                      className="flex items-center justify-center border border-slate-300 rounded-lg w-11 py-1.5 text-sm cursor-pointer has-checked:bg-slate-900 has-checked:text-white has-checked:border-slate-900"
+                      className="flex items-center justify-center border border-slate-300 rounded-lg w-11 py-1.5 text-sm cursor-pointer transition-colors has-checked:bg-[var(--brand)] has-checked:text-white has-checked:border-[var(--brand)]"
                     >
                       <input
                         type="checkbox"

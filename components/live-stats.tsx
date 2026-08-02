@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import type { QuickPlay } from "@/lib/ratings/quick-plays";
 import { recordPlay } from "@/lib/actions/stats";
+import { Avatar } from "@/components/avatar";
 
 type PlayerChip = { id: string; name: string; jersey: number | null; positions: string };
 
@@ -143,7 +144,7 @@ export function LiveStats({
                   setPlay(p);
                   setRoleIndex(0);
                 }}
-                className="card p-3 text-center hover:bg-slate-50 cursor-pointer"
+                className="card card-hover p-3 text-center hover:bg-slate-50 cursor-pointer"
               >
                 <div className="text-2xl">{p.icon}</div>
                 <div className="text-sm font-medium mt-1">{p.label}</div>
@@ -186,7 +187,7 @@ export function LiveStats({
                 }}
                 className={`rounded-lg border px-4 py-3 text-base font-semibold cursor-pointer ${
                   amount === v
-                    ? "bg-slate-900 text-white border-slate-900"
+                    ? "bg-[var(--brand)] text-white border-[var(--brand)]"
                     : "border-slate-300 bg-white hover:bg-slate-50"
                 }`}
               >
@@ -294,16 +295,19 @@ function RolePicker({
           <button
             key={p.id}
             onClick={() => toggle(p.id)}
-            className={`rounded-lg border px-3 py-3 text-left cursor-pointer ${
+            className={`rounded-lg border px-3 py-3 flex items-center gap-2 text-left cursor-pointer ${
               selected.includes(p.id)
-                ? "bg-slate-900 text-white border-slate-900"
+                ? "bg-[var(--brand)] text-white border-[var(--brand)]"
                 : "border-slate-300 bg-white hover:bg-slate-50"
             }`}
           >
-            <span className="font-mono text-sm mr-1.5 opacity-60">
-              {p.jersey ?? "—"}
+            <Avatar name={p.name} size="sm" />
+            <span className="min-w-0">
+              <span className="font-mono text-sm mr-1.5 opacity-60">
+                {p.jersey ?? "—"}
+              </span>
+              <span className="text-sm font-medium">{p.name}</span>
             </span>
-            <span className="text-sm font-medium">{p.name}</span>
           </button>
         ))}
       </div>

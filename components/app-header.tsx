@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logout } from "@/lib/actions/auth-actions";
+import { Avatar } from "@/components/avatar";
 
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard", icon: "🏠" },
@@ -58,7 +59,7 @@ export function AppHeader({
               href={item.href}
               className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap transition-colors ${
                 isActive(pathname, item.href)
-                  ? "bg-slate-700 text-white font-medium"
+                  ? "bg-[var(--brand)]/25 text-white font-medium"
                   : "text-slate-300 hover:text-white hover:bg-slate-800"
               }`}
             >
@@ -72,6 +73,7 @@ export function AppHeader({
             <div className="text-sm leading-tight">{userName}</div>
             <div className="text-xs text-slate-400 leading-tight">{roleLabel}</div>
           </div>
+          {userName && <Avatar name={userName} size="sm" />}
           <form action={logout}>
             <button className="text-xs text-slate-400 hover:text-white border border-slate-700 rounded-md px-2.5 py-1.5 cursor-pointer">
               Sign out
@@ -100,7 +102,7 @@ export function AppHeader({
                 href={item.href}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-base ${
                   isActive(pathname, item.href)
-                    ? "bg-slate-700 text-white font-medium"
+                    ? "bg-[var(--brand)]/25 text-white font-medium"
                     : "text-slate-300 hover:bg-slate-800"
                 }`}
               >
@@ -110,9 +112,12 @@ export function AppHeader({
             ))}
           </nav>
           <div className="mt-3 mx-3 pt-3 border-t border-slate-800 flex items-center justify-between gap-3">
-            <div className="px-3">
-              <div className="text-sm">{userName}</div>
-              <div className="text-xs text-slate-400">{roleLabel}</div>
+            <div className="px-3 flex items-center gap-3">
+              {userName && <Avatar name={userName} size="sm" />}
+              <div>
+                <div className="text-sm">{userName}</div>
+                <div className="text-xs text-slate-400">{roleLabel}</div>
+              </div>
             </div>
             <form action={logout}>
               <button className="text-sm text-slate-300 hover:text-white border border-slate-700 rounded-md px-3 py-2 cursor-pointer">

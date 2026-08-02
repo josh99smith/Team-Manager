@@ -10,6 +10,9 @@ import {
   ratingTier,
   primaryPosition,
 } from "@/lib/ratings/defaults";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
+import { Avatar } from "@/components/avatar";
 
 export default async function RatingsPage() {
   const session = await auth();
@@ -73,33 +76,37 @@ export default async function RatingsPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-bold">Player ratings</h1>
-          <p className="text-slate-500 text-sm mt-1">
-            Team average OVR: <span className="font-semibold">{teamAvg}</span> ·
+      <PageHeader
+        title="Player ratings"
+        subtitle={
+          <>
+            Team average OVR: <span className="font-semibold text-slate-700">{teamAvg}</span> ·
             ratings move with practice and game grades
-          </p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <a href="/api/export/ratings" download className="btn-secondary">
-            ⬇ Ratings CSV
-          </a>
-          <a href="/api/export/stats" download className="btn-secondary">
-            ⬇ Season stats CSV
-          </a>
-          {session?.user.role === "HEAD_COACH" && (
-            <Link href="/ratings/weights" className="btn-secondary">
-              Edit position weights
-            </Link>
-          )}
-        </div>
-      </div>
+          </>
+        }
+        actions={
+          <>
+            <a href="/api/export/ratings" download className="btn-secondary">
+              ⬇ Ratings CSV
+            </a>
+            <a href="/api/export/stats" download className="btn-secondary">
+              ⬇ Season stats CSV
+            </a>
+            {session?.user.role === "HEAD_COACH" && (
+              <Link href="/ratings/weights" className="btn-secondary">
+                Edit position weights
+              </Link>
+            )}
+          </>
+        }
+      />
 
       {rows.length === 0 ? (
-        <div className="card p-10 text-center text-slate-500">
-          No active players yet.
-        </div>
+        <EmptyState
+          icon="📊"
+          title="No active players yet"
+          description="Add players to the roster to see their ratings here."
+        />
       ) : (
         <div className="card overflow-x-auto">
           <table className="w-full text-sm whitespace-nowrap">
@@ -132,8 +139,9 @@ export default async function RatingsPage() {
                     <td className="px-3 py-2.5">
                       <Link
                         href={`/roster/${p.id}`}
-                        className="font-medium hover:underline"
+                        className="flex items-center gap-2.5 font-medium hover:underline w-fit"
                       >
+                        <Avatar name={`${p.firstName} ${p.lastName}`} size="sm" />
                         {p.firstName} {p.lastName}
                       </Link>
                     </td>

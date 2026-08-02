@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { updateEvent } from "@/lib/actions/events";
 import { EventForm } from "@/components/event-form";
+import { PageHeader } from "@/components/page-header";
 
 export default async function EditEventPage(props: {
   params: Promise<{ id: string }>;
@@ -12,7 +13,7 @@ export default async function EditEventPage(props: {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Edit event</h1>
+      <PageHeader title="Edit event" />
       {event.recurrenceId && (
         <p className="text-sm text-slate-500 mb-4">
           This event is part of a recurring series — changes here apply to this

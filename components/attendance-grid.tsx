@@ -3,6 +3,7 @@
 import { useTransition, useOptimistic } from "react";
 import { markAttendance, clearAttendance } from "@/lib/actions/events";
 import { ATTENDANCE_STATUSES, ATTENDANCE_LABELS } from "@/lib/constants";
+import { Avatar } from "@/components/avatar";
 
 const STATUS_ACTIVE_STYLES: Record<string, string> = {
   PRESENT: "bg-green-600 text-white border-green-600",
@@ -73,15 +74,14 @@ export function AttendanceGrid({
               key={p.id}
               className="py-2.5 flex items-center justify-between gap-3 flex-wrap"
             >
-              <div className="min-w-0">
-                <span className="font-mono text-slate-400 text-sm mr-2">
+              <div className="min-w-0 flex items-center gap-2.5">
+                <span className="font-mono text-slate-400 text-sm">
                   {p.jersey ?? "—"}
                 </span>
+                <Avatar name={p.name} size="sm" />
                 <span className="font-medium text-sm">{p.name}</span>
                 {p.positions && (
-                  <span className="ml-2 text-xs text-slate-400">
-                    {p.positions}
-                  </span>
+                  <span className="text-xs text-slate-400">{p.positions}</span>
                 )}
               </div>
               <div className="flex gap-1">

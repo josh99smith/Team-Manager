@@ -9,6 +9,8 @@ import {
 import { formatDate, formatDateTime, formatShortDate, formatTime } from "@/lib/format";
 import { getOvrForPlayers } from "@/lib/ratings/engine";
 import { ratingTier } from "@/lib/ratings/defaults";
+import { PageHeader } from "@/components/page-header";
+import { Avatar } from "@/components/avatar";
 
 export default async function DashboardPage() {
   const session = await auth();
@@ -123,41 +125,44 @@ export default async function DashboardPage() {
 
   return (
     <div>
-      <div className="flex items-end justify-between gap-4 flex-wrap mb-6">
-        <div>
-          <h1 className="text-2xl font-bold">Welcome back, {firstName}</h1>
-          <p className="text-slate-500">{formatDate(now)}</p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <Link href="/events/new" className="btn-secondary">
-            + Event
-          </Link>
-          <Link href="/roster/new" className="btn-secondary">
-            + Player
-          </Link>
-          {lastGradableEvent && (
-            <Link href={`/events/${lastGradableEvent.id}`} className="btn-primary">
-              Grade {EVENT_TYPE_LABELS[lastGradableEvent.type]?.toLowerCase()} ·{" "}
-              {formatShortDate(lastGradableEvent.startsAt)}
+      <PageHeader
+        title={`Welcome back, ${firstName}`}
+        subtitle={formatDate(now)}
+        actions={
+          <>
+            <Link href="/events/new" className="btn-secondary">
+              + Event
             </Link>
-          )}
-        </div>
-      </div>
+            <Link href="/roster/new" className="btn-secondary">
+              + Player
+            </Link>
+            {lastGradableEvent && (
+              <Link href={`/events/${lastGradableEvent.id}`} className="btn-primary">
+                Grade {EVENT_TYPE_LABELS[lastGradableEvent.type]?.toLowerCase()} ·{" "}
+                {formatShortDate(lastGradableEvent.startsAt)}
+              </Link>
+            )}
+          </>
+        }
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <StatCard
+          icon="👥"
           value={String(activePlayers.length)}
           label="Active players"
           sub={injuredCount > 0 ? `+ ${injuredCount} injured` : "none injured"}
           href="/roster"
         />
         <StatCard
+          icon="📊"
           value={teamAvg != null ? String(teamAvg) : "—"}
           label="Team OVR"
           sub={teamAvg != null ? ratingTier(teamAvg).label : "no ratings yet"}
           href="/ratings"
         />
         <StatCard
+          icon="📋"
           value={attendanceRate != null ? `${attendanceRate}%` : "—"}
           label="Attendance"
           sub={
@@ -168,6 +173,7 @@ export default async function DashboardPage() {
           href="/calendar?view=past"
         />
         <StatCard
+          icon="✅"
           value={String(openTasks.length)}
           label="Open tasks"
           sub={
@@ -313,7 +319,10 @@ export default async function DashboardPage() {
                     href={`/roster/${m.playerId}`}
                     className="flex items-center justify-between gap-3 py-2.5 hover:bg-slate-50 rounded px-1 -mx-1 text-sm"
                   >
-                    <span className="font-medium truncate min-w-0">{m.name}</span>
+                    <span className="flex items-center gap-2.5 min-w-0">
+                      <Avatar name={m.name} size="sm" />
+                      <span className="font-medium truncate min-w-0">{m.name}</span>
+                    </span>
                     <span className="flex items-center gap-2 shrink-0">
                       <span className={`badge font-bold ${ratingTier(m.ovr).bg}`}>
                         {m.ovr}
@@ -339,12 +348,15 @@ export default async function DashboardPage() {
                       href={`/roster/${p.id}`}
                       className="flex items-center justify-between gap-3 py-2.5 hover:bg-slate-50 rounded px-1 -mx-1 text-sm"
                     >
-                      <span className="truncate min-w-0">
-                        <span className="text-slate-400 font-mono mr-2">{i + 1}.</span>
-                        <span className="font-medium">
-                          {p.firstName} {p.lastName}
+                      <span className="flex items-center gap-2.5 min-w-0">
+                        <span className="text-slate-400 font-mono w-4 shrink-0">{i + 1}.</span>
+                        <Avatar name={`${p.firstName} ${p.lastName}`} size="sm" />
+                        <span className="truncate min-w-0">
+                          <span className="font-medium">
+                            {p.firstName} {p.lastName}
+                          </span>
+                          <span className="text-xs text-slate-400 ml-2">{p.positions}</span>
                         </span>
-                        <span className="text-xs text-slate-400 ml-2">{p.positions}</span>
                       </span>
                       <span className={`badge font-bold shrink-0 ${ratingTier(ovr).bg}`}>
                         {ovr}
@@ -389,15 +401,18 @@ export default async function DashboardPage() {
                     href={`/roster/${g.playerId}`}
                     className="flex items-center justify-between gap-3 py-2.5 hover:bg-slate-50 rounded px-1 -mx-1 text-sm"
                   >
-                    <div className="min-w-0">
-                      <div className="font-medium truncate">
-                        {g.player.firstName} {g.player.lastName}
-                      </div>
-                      <div className="text-xs text-slate-500 truncate">
-                        {EVENT_TYPE_LABELS[g.event.type]}
-                        {g.event.opponent ? ` vs ${g.event.opponent}` : ""} ·{" "}
-                        {formatShortDate(g.event.startsAt)} · {g.coach.name}
-                        {g.notes ? ` — “${g.notes}”` : ""}
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <Avatar name={`${g.player.firstName} ${g.player.lastName}`} size="sm" />
+                      <div className="min-w-0">
+                        <div className="font-medium truncate">
+                          {g.player.firstName} {g.player.lastName}
+                        </div>
+                        <div className="text-xs text-slate-500 truncate">
+                          {EVENT_TYPE_LABELS[g.event.type]}
+                          {g.event.opponent ? ` vs ${g.event.opponent}` : ""} ·{" "}
+                          {formatShortDate(g.event.startsAt)} · {g.coach.name}
+                          {g.notes ? ` — “${g.notes}”` : ""}
+                        </div>
                       </div>
                     </div>
                     {g.overall != null && (
@@ -417,12 +432,14 @@ export default async function DashboardPage() {
 }
 
 function StatCard({
+  icon,
   value,
   label,
   sub,
   subClass,
   href,
 }: {
+  icon: string;
   value: string;
   label: string;
   sub: string;
@@ -430,8 +447,13 @@ function StatCard({
   href: string;
 }) {
   return (
-    <Link href={href} className="card p-5 hover:bg-slate-50">
-      <div className="text-3xl font-bold tabular-nums">{value}</div>
+    <Link href={href} className="card card-hover p-5 hover:bg-slate-50">
+      <div className="flex items-center justify-between">
+        <div className="text-3xl font-bold tabular-nums">{value}</div>
+        <span className="text-xl" aria-hidden>
+          {icon}
+        </span>
+      </div>
       <div className="text-sm text-slate-600 mt-0.5">{label}</div>
       <div className={`text-xs mt-1 ${subClass ?? "text-slate-400"}`}>{sub}</div>
     </Link>

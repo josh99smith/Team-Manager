@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { saveWeights } from "@/lib/actions/ratings";
 import { SubmitButton } from "@/components/submit-button";
+import { PageHeader } from "@/components/page-header";
 import { getAttributeDefs } from "@/lib/ratings/engine";
 import { getTeamPreset } from "@/lib/team";
 
@@ -36,22 +37,26 @@ export default async function WeightsPage(props: {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-2">Position weight profiles</h1>
-      <p className="text-slate-500 text-sm mb-6 max-w-2xl">
-        Weights control how each attribute counts toward a player&apos;s OVR at
-        this position. Set a weight of 0 to exclude an attribute. Weights are
-        relative — they don&apos;t need to add up to 100 (current total:{" "}
-        {total}).
-      </p>
+      <PageHeader
+        title="Position weight profiles"
+        subtitle={
+          <>
+            Weights control how each attribute counts toward a player&apos;s OVR
+            at this position. Set a weight of 0 to exclude an attribute.
+            Weights are relative — they don&apos;t need to add up to 100
+            (current total: {total}).
+          </>
+        }
+      />
 
       <div className="flex flex-wrap gap-1 mb-6">
         {POSITIONS.map((pos) => (
           <Link
             key={pos}
             href={`/ratings/weights?position=${pos}`}
-            className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               pos === position
-                ? "bg-slate-900 text-white"
+                ? "bg-[var(--brand)] text-white"
                 : "text-slate-600 hover:bg-slate-200"
             }`}
           >

@@ -15,6 +15,7 @@ import { deletePlayerAccount } from "@/lib/actions/portal";
 import { PortalAccountForm } from "./portal-account";
 import { OvrBadge } from "@/components/rating-card";
 import { RatingEditor, type RatingGroup } from "@/components/rating-editor";
+import { Avatar } from "@/components/avatar";
 import { TrendChart } from "@/components/trend-chart";
 import {
   getAttributeDefs,
@@ -114,9 +115,10 @@ export default async function PlayerPage(props: {
       <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
         <div className="flex items-start gap-4">
           <OvrBadge ovr={ovr} />
+          <Avatar name={`${player.firstName} ${player.lastName}`} size="lg" />
           <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold">
+            <h1 className="text-2xl font-bold tracking-tight">
               {player.jersey != null && (
                 <span className="text-slate-400 mr-2">#{player.jersey}</span>
               )}

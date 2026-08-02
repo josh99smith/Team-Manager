@@ -3,6 +3,7 @@
 import { useState, useActionState } from "react";
 import type { StatDef } from "@/lib/ratings/presets";
 import { saveStatLine, type SaveState } from "@/lib/actions/stats";
+import { Avatar } from "@/components/avatar";
 
 export type StatRowData = {
   id: string;
@@ -64,9 +65,10 @@ function StatRow({
         aria-expanded={open}
       >
         <div className="min-w-0 flex items-center gap-2">
-          <span className="font-mono text-slate-400 text-sm w-7 shrink-0">
+          <span className="font-mono text-slate-400 text-sm w-6 shrink-0">
             {p.jersey ?? "—"}
           </span>
+          <Avatar name={p.name} size="sm" />
           <span className="font-medium text-sm truncate">{p.name}</span>
           <span className="text-xs text-slate-400">{p.positions}</span>
         </div>

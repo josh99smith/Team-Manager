@@ -3,6 +3,9 @@ import { getTeamPreset } from "@/lib/team";
 import { getDepthOrder, getRosterWithOvrs } from "@/lib/depth";
 import { moveDepth, resetDepth } from "@/lib/actions/depth";
 import { ratingTier } from "@/lib/ratings/defaults";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
+import { Avatar } from "@/components/avatar";
 
 export default async function DepthChartPage() {
   const preset = await getTeamPreset();
@@ -16,19 +19,17 @@ export default async function DepthChartPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Depth chart</h1>
-        <p className="text-slate-500 text-sm mt-1">
-          Ordered by OVR by default — use the arrows to set your own order.
-          Positions come from each player&apos;s profile.
-        </p>
-      </div>
+      <PageHeader
+        title="Depth chart"
+        subtitle="Ordered by OVR by default — use the arrows to set your own order. Positions come from each player's profile."
+      />
 
       {columns.length === 0 ? (
-        <div className="card p-10 text-center text-slate-500">
-          No players with positions yet. Assign positions on player profiles to
-          build the depth chart.
-        </div>
+        <EmptyState
+          icon="🗂️"
+          title="No players with positions yet"
+          description="Assign positions on player profiles to build the depth chart."
+        />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {columns.map(({ position, rows }) => {
@@ -65,6 +66,10 @@ export default async function DepthChartPage() {
                         >
                           {i + 1}
                         </span>
+                        <Avatar
+                          name={`${row.player.firstName} ${row.player.lastName}`}
+                          size="sm"
+                        />
                         <Link
                           href={`/roster/${row.player.id}`}
                           className="text-sm font-medium truncate flex-1 hover:underline"

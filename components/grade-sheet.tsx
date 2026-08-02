@@ -3,6 +3,7 @@
 import { useMemo, useState, useActionState } from "react";
 import { saveGrade, type SaveState } from "@/lib/actions/grades";
 import { ratingTier } from "@/lib/ratings/defaults";
+import { Avatar } from "@/components/avatar";
 
 export function gradeLetter(v: number): string {
   if (v >= 97) return "A+";
@@ -160,9 +161,10 @@ function GradeRow({
         aria-expanded={open}
       >
         <div className="min-w-0 flex items-center gap-2">
-          <span className="font-mono text-slate-400 text-sm w-7 shrink-0">
+          <span className="font-mono text-slate-400 text-sm w-6 shrink-0">
             {p.jersey ?? "—"}
           </span>
+          <Avatar name={p.name} size="sm" />
           <span className="font-medium text-sm truncate">{p.name}</span>
           <span className="text-xs text-slate-400">{p.positionList.join(", ")}</span>
           <span className={`badge ${tier.bg}`}>{p.ovr} OVR</span>

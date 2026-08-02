@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+:root {
+  --brand: #4f46e5;
+  --brand-hover: #4338ca;
+  --brand-soft: #eef2ff;
+}
+
 body {
   background: #f8fafc;
   color: #0f172a;
@@ -18,6 +24,10 @@ body {
   @apply bg-white rounded-xl border border-slate-200 shadow-sm;
 }
 
+.card-hover {
+  @apply transition-shadow hover:shadow-md;
+}
+
 .btn-primary,
 .btn-secondary,
 .btn-danger {
@@ -25,7 +35,7 @@ body {
 }
 
 .btn-primary {
-  @apply bg-slate-900 text-white hover:bg-slate-700;
+  @apply text-white bg-[var(--brand)] hover:bg-[var(--brand-hover)];
 }
 
 .btn-secondary {
@@ -37,7 +47,7 @@ body {
 }
 
 .input {
-  @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:border-slate-400;
+  @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder-slate-400 transition-colors focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)];
 }
 
 .label {
@@ -46,4 +56,8 @@ body {
 
 .badge {
   @apply inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium;
+}
+
+.link {
+  @apply text-[var(--brand)] hover:underline;
 }

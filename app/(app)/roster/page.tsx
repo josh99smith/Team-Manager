@@ -4,6 +4,9 @@ import { PLAYER_STATUS_LABELS } from "@/lib/constants";
 import { formatHeight } from "@/lib/format";
 import { getOvrForPlayers } from "@/lib/ratings/engine";
 import { ratingTier } from "@/lib/ratings/defaults";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
+import { Avatar } from "@/components/avatar";
 
 const STATUS_BADGES: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-800",
@@ -37,21 +40,23 @@ export default async function RosterPage(props: {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Roster</h1>
-        <Link href="/roster/new" className="btn-primary">
-          + Add player
-        </Link>
-      </div>
+      <PageHeader
+        title="Roster"
+        actions={
+          <Link href="/roster/new" className="btn-primary">
+            + Add player
+          </Link>
+        }
+      />
 
       <div className="flex gap-1 mb-4">
         {filters.map((f) => (
           <Link
             key={f.key}
             href={f.key === "current" ? "/roster" : `/roster?status=${f.key}`}
-            className={`px-3 py-1.5 rounded-lg text-sm ${
+            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
               filter === f.key
-                ? "bg-slate-900 text-white"
+                ? "bg-[var(--brand)] text-white font-medium"
                 : "text-slate-600 hover:bg-slate-200"
             }`}
           >
@@ -61,9 +66,16 @@ export default async function RosterPage(props: {
       </div>
 
       {players.length === 0 ? (
-        <div className="card p-10 text-center text-slate-500">
-          No players yet. Add your first player to build the roster.
-        </div>
+        <EmptyState
+          icon="🏈"
+          title="No players yet"
+          description="Add your first player to build the roster."
+          action={
+            <Link href="/roster/new" className="btn-primary">
+              + Add player
+            </Link>
+          }
+        />
       ) : (
         <div className="card overflow-x-auto">
           <table className="w-full text-sm">
@@ -90,8 +102,9 @@ export default async function RosterPage(props: {
                   <td className="px-4 py-3">
                     <Link
                       href={`/roster/${p.id}`}
-                      className="font-medium text-slate-900 hover:underline"
+                      className="flex items-center gap-2.5 font-medium text-slate-900 hover:underline w-fit"
                     >
+                      <Avatar name={`${p.firstName} ${p.lastName}`} size="sm" />
                       {p.firstName} {p.lastName}
                     </Link>
                   </td>

@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { EVENT_TYPE_LABELS, EVENT_TYPE_COLORS } from "@/lib/constants";
 import { formatDate, formatTime } from "@/lib/format";
+import { PageHeader } from "@/components/page-header";
+import { EmptyState } from "@/components/empty-state";
 
 export default async function CalendarPage(props: {
   searchParams: Promise<{ view?: string }>;
@@ -31,32 +33,47 @@ export default async function CalendarPage(props: {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Calendar</h1>
-        <Link href="/events/new" className="btn-primary">
-          + Add event
-        </Link>
-      </div>
+      <PageHeader
+        title="Calendar"
+        actions={
+          <Link href="/events/new" className="btn-primary">
+            + Add event
+          </Link>
+        }
+      />
 
       <div className="flex gap-1 mb-4">
         <Link
           href="/calendar"
-          className={`px-3 py-1.5 rounded-lg text-sm ${!showPast ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-200"}`}
+          className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${!showPast ? "bg-[var(--brand)] text-white font-medium" : "text-slate-600 hover:bg-slate-200"}`}
         >
           Upcoming
         </Link>
         <Link
           href="/calendar?view=past"
-          className={`px-3 py-1.5 rounded-lg text-sm ${showPast ? "bg-slate-900 text-white" : "text-slate-600 hover:bg-slate-200"}`}
+          className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${showPast ? "bg-[var(--brand)] text-white font-medium" : "text-slate-600 hover:bg-slate-200"}`}
         >
           Past
         </Link>
       </div>
 
       {events.length === 0 ? (
-        <div className="card p-10 text-center text-slate-500">
-          {showPast ? "No past events." : "Nothing scheduled. Add a practice or game to get started."}
-        </div>
+        <EmptyState
+          icon="📅"
+          title={showPast ? "No past events" : "Nothing scheduled"}
+          description={
+            showPast
+              ? undefined
+              : "Add a practice or game to get started."
+          }
+          action={
+            showPast ? undefined : (
+              <Link href="/events/new" className="btn-primary">
+                + Add event
+              </Link>
+            )
+          }
+        />
       ) : (
         <div className="space-y-6">
           {[...byDay.entries()].map(([day, dayEvents]) => (
@@ -67,7 +84,7 @@ export default async function CalendarPage(props: {
                   <Link
                     key={e.id}
                     href={`/events/${e.id}`}
-                    className="card p-4 flex items-center gap-4 hover:bg-slate-50"
+                    className="card card-hover p-4 flex items-center gap-4 hover:bg-slate-50"
                   >
                     <span className={`badge ${EVENT_TYPE_COLORS[e.type] ?? ""}`}>
                       {EVENT_TYPE_LABELS[e.type] ?? e.type}

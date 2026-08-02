@@ -11,6 +11,7 @@ import {
 import { formatDate, formatDateTime, formatShortDate, formatTime } from "@/lib/format";
 import { OvrBadge } from "@/components/rating-card";
 import { TrendChart } from "@/components/trend-chart";
+import { Avatar } from "@/components/avatar";
 import {
   getAttributeDefs,
   getEffectiveRatings,
@@ -77,8 +78,9 @@ export default async function PortalPage() {
     <div>
       <div className="flex items-center gap-4 mb-8">
         <OvrBadge ovr={ovr} />
+        <Avatar name={`${player.firstName} ${player.lastName}`} size="lg" />
         <div>
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-2xl font-bold tracking-tight">
             {player.jersey != null && (
               <span className="text-slate-400 mr-2">#{player.jersey}</span>
             )}

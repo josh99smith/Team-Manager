@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { updatePlayer } from "@/lib/actions/players";
 import { PlayerForm } from "@/components/player-form";
+import { PageHeader } from "@/components/page-header";
 import { getTeamPreset } from "@/lib/team";
 
 export default async function EditPlayerPage(props: {
@@ -16,9 +17,7 @@ export default async function EditPlayerPage(props: {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">
-        Edit {player.firstName} {player.lastName}
-      </h1>
+      <PageHeader title={`Edit ${player.firstName} ${player.lastName}`} />
       <PlayerForm
         action={updatePlayer.bind(null, player.id)}
         player={player}
