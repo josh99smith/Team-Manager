@@ -5,14 +5,8 @@ import type { AttributeDefinition } from "@prisma/client";
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
 
-// How hard a single event can move a rating, and how much event types count.
+// How hard a single event can move a rating.
 const MAX_DELTA_PER_EVENT = 2;
-const EVENT_MULTIPLIERS: Record<string, number> = {
-  GAME: 2,
-  SCRIMMAGE: 1.5,
-};
-// A category grade this many points above/below the current rating produces ±1 (pre-multiplier).
-const GRADE_SENSITIVITY = 15;
 
 // Seed attribute definitions + position weights for the team's sport if the
 // tables are empty.
@@ -116,14 +110,15 @@ export type GradeInput = {
   eventId: string;
   coachId: string;
   overall: number | null; // 0-100 quick grade
-  skills: Record<string, number>; // attribute key (e.g. "throwAccuracy") -> 0-100
+  skills: Record<string, number>; // attribute key -> nudge step (-2..+2)
   notes: string;
 };
 
 // Save a grade and adjust the player's ratings.
 // Re-grading first reverts the previously applied deltas so edits don't stack.
 export async function applyGrade(input: GradeInput) {
-  const [defs, event, player] = await Promise.all([
+  // The event lookup validates the grade targets a real event.
+  const [defs, , player] = await Promise.all([
     getAttributeDefs(),
     prisma.event.findUniqueOrThrow({ where: { id: input.eventId } }),
     prisma.player.findUniqueOrThrow({ where: { id: input.playerId } }),
@@ -161,22 +156,15 @@ export async function applyGrade(input: GradeInput) {
       where: { playerId: input.playerId, attributeId: null },
     })) > 0;
 
-  const mult = EVENT_MULTIPLIERS[event.type] ?? 1;
   const applied: Record<string, number> = {};
 
-  // Each skill grade adjusts exactly that attribute: grading above the
-  // player's current rating pushes it up, below pulls it down.
+  // Skill nudges apply exactly as tapped: ▲ = +1, ▲▲ = +2 to that attribute.
   const defsByKey = new Map(defs.map((d) => [d.key, d]));
-  for (const [attrKey, grade] of Object.entries(input.skills)) {
+  for (const [attrKey, step] of Object.entries(input.skills)) {
     const def = defsByKey.get(attrKey);
     if (!def) continue;
-    const current = ratings.get(def.id) ?? DEFAULT_RATING;
-    const delta = clamp(
-      Math.round(((grade - current) / GRADE_SENSITIVITY) * mult),
-      -MAX_DELTA_PER_EVENT,
-      MAX_DELTA_PER_EVENT
-    );
-    if (delta !== 0) applied[def.id] = (applied[def.id] ?? 0) + delta;
+    const delta = clamp(Math.round(step), -MAX_DELTA_PER_EVENT, MAX_DELTA_PER_EVENT);
+    if (delta !== 0) applied[def.id] = delta;
   }
 
   // Quick overall grade gives a small nudge to effort and awareness.

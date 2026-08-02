@@ -30,8 +30,10 @@ export async function saveGrade(
     const skills: Record<string, number> = {};
     for (const [key, raw] of formData.entries()) {
       if (!key.startsWith("skill:")) continue;
-      const value = String(raw).trim();
-      if (value) skills[key.slice(6)] = clamp100(parseInt(value, 10));
+      const value = parseInt(String(raw).trim(), 10);
+      if (!Number.isNaN(value) && value !== 0) {
+        skills[key.slice(6)] = Math.max(-2, Math.min(2, value));
+      }
     }
 
     if (overall == null && Object.keys(skills).length === 0 && !notes) {

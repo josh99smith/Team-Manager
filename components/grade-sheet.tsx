@@ -39,6 +39,41 @@ function overallColor(v: number): string {
 
 export type SkillSpec = { key: string; name: string; current: number };
 
+function NudgeButton({
+  active,
+  kind,
+  onClick,
+  label,
+  title,
+}: {
+  active: boolean;
+  kind: "up" | "down" | "zero";
+  onClick: () => void;
+  label: string;
+  title: string;
+}) {
+  const activeStyle =
+    kind === "up"
+      ? "bg-green-600 text-white border-green-600"
+      : kind === "down"
+        ? "bg-red-600 text-white border-red-600"
+        : "bg-slate-200 text-slate-600 border-slate-200";
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      aria-label={title}
+      aria-pressed={active}
+      className={`rounded-md border w-9 py-1.5 text-xs font-bold cursor-pointer transition-colors ${
+        active ? activeStyle : "border-slate-200 bg-white text-slate-400 hover:bg-slate-50"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
 export type GradeRowData = {
   id: string;
   name: string;
@@ -88,27 +123,23 @@ function GradeRow({
   // Overall grade: slider + letter buttons, optional until touched
   const [overall, setOverall] = useState<number | null>(p.mine?.overall ?? null);
 
-  // Skill sliders start at the saved grade, else at the player's current
-  // rating ("played at their level"). Only touched skills are submitted.
-  const initialSkills = useMemo(() => {
+  // Skill nudges: -2..+2 per skill, 0/absent = not graded. Saved grades with
+  // small values prefill (legacy 0-100 grades are ignored for prefill).
+  const initialSteps = useMemo(() => {
     const m: Record<string, number> = {};
-    for (const s of p.skills) m[s.key] = p.mine?.cats[s.key] ?? s.current;
+    for (const s of p.skills) {
+      const saved = p.mine?.cats[s.key];
+      if (saved != null && Math.abs(saved) <= 2) m[s.key] = saved;
+    }
     return m;
   }, [p]);
-  const [skillValues, setSkillValues] = useState(initialSkills);
-  const [touched, setTouched] = useState<Set<string>>(
-    () => new Set(Object.keys(p.mine?.cats ?? {}))
-  );
+  const [steps, setSteps] = useState<Record<string, number>>(initialSteps);
 
-  function setSkill(key: string, value: number) {
-    setSkillValues((prev) => ({ ...prev, [key]: value }));
-    setTouched((prev) => new Set(prev).add(key));
-  }
-  function clearSkill(key: string) {
-    setSkillValues((prev) => ({ ...prev, [key]: initialSkills[key] }));
-    setTouched((prev) => {
-      const next = new Set(prev);
-      next.delete(key);
+  function setStep(key: string, step: number) {
+    setSteps((prev) => {
+      const next = { ...prev };
+      if (step === 0 || prev[key] === step) delete next[key];
+      else next[key] = step;
       return next;
     });
   }
@@ -212,74 +243,48 @@ function GradeRow({
             />
           </div>
 
-          {/* Position-specific skill sliders */}
+          {/* Position-specific skill nudges */}
           {p.skills.length > 0 && (
             <div>
               <span className="label">
                 {p.primaryPosition} skills{" "}
                 <span className="normal-case font-normal text-slate-400">
-                  — sliders start at the player&apos;s current rating; above = played
-                  better, below = worse
+                  — tap ▲ / ▼ to move a skill by 1 or 2 points
                 </span>
               </span>
-              <div className="space-y-2.5 mt-1.5">
+              <div className="space-y-1.5 mt-1.5">
                 {p.skills.map((s) => {
-                  const v = skillValues[s.key];
-                  const isTouched = touched.has(s.key);
-                  const delta = v - s.current;
+                  const step = steps[s.key] ?? 0;
                   return (
-                    <div key={s.key} className="flex items-center gap-3">
-                      {isTouched && (
-                        <input type="hidden" name={`skill:${s.key}`} value={v} />
+                    <div key={s.key} className="flex items-center justify-between gap-3">
+                      {step !== 0 && (
+                        <input type="hidden" name={`skill:${s.key}`} value={step} />
                       )}
                       <span
-                        className={`text-sm w-36 shrink-0 truncate ${isTouched ? "text-slate-800 font-medium" : "text-slate-500"}`}
-                        title={`Current rating: ${s.current}`}
+                        className={`text-sm min-w-0 truncate ${step !== 0 ? "text-slate-800 font-medium" : "text-slate-600"}`}
                       >
                         {s.name}
+                        <span
+                          className={`ml-2 font-mono text-xs ${
+                            step > 0
+                              ? "text-green-600 font-bold"
+                              : step < 0
+                                ? "text-red-600 font-bold"
+                                : "text-slate-400"
+                          }`}
+                        >
+                          {s.current}
+                          {step !== 0 &&
+                            ` → ${s.current + step} (${step > 0 ? "+" : ""}${step})`}
+                        </span>
                       </span>
-                      <input
-                        type="range"
-                        min={0}
-                        max={100}
-                        value={v}
-                        onChange={(e) => setSkill(s.key, parseInt(e.target.value, 10))}
-                        className="flex-1 h-6 cursor-pointer"
-                        style={{
-                          accentColor: !isTouched
-                            ? "#cbd5e1"
-                            : delta > 0
-                              ? "#22c55e"
-                              : delta < 0
-                                ? "#ef4444"
-                                : "#64748b",
-                        }}
-                        aria-label={`${s.name} grade`}
-                      />
-                      <span
-                        className={`w-16 text-right font-mono text-sm shrink-0 ${
-                          !isTouched
-                            ? "text-slate-300"
-                            : delta > 0
-                              ? "text-green-600 font-semibold"
-                              : delta < 0
-                                ? "text-red-600 font-semibold"
-                                : "text-slate-500"
-                        }`}
-                      >
-                        {isTouched
-                          ? `${v}${delta !== 0 ? ` ${delta > 0 ? "▲" : "▼"}` : ""}`
-                          : "—"}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => clearSkill(s.key)}
-                        disabled={!isTouched}
-                        className="text-xs text-slate-300 enabled:text-slate-400 enabled:hover:text-red-600 enabled:cursor-pointer shrink-0"
-                        title="Don't grade this skill"
-                      >
-                        ✕
-                      </button>
+                      <div className="flex gap-1 shrink-0">
+                        <NudgeButton active={step === -2} kind="down" onClick={() => setStep(s.key, -2)} label="▼▼" title={`${s.name} −2`} />
+                        <NudgeButton active={step === -1} kind="down" onClick={() => setStep(s.key, -1)} label="▼" title={`${s.name} −1`} />
+                        <NudgeButton active={step === 0} kind="zero" onClick={() => setStep(s.key, 0)} label="—" title={`${s.name} not graded`} />
+                        <NudgeButton active={step === 1} kind="up" onClick={() => setStep(s.key, 1)} label="▲" title={`${s.name} +1`} />
+                        <NudgeButton active={step === 2} kind="up" onClick={() => setStep(s.key, 2)} label="▲▲" title={`${s.name} +2`} />
+                      </div>
                     </div>
                   );
                 })}
@@ -313,9 +318,8 @@ function GradeRow({
             <p className="text-sm text-red-600 font-medium">⚠ {state.error}</p>
           )}
           <p className="text-xs text-slate-400">
-            Graded skills adjust those exact attributes (max ±2 per event; games
-            count double). The overall grade alone gives a small
-            effort/awareness nudge.
+            Skill nudges apply exactly as tapped (max ±2 per event). The overall
+            grade alone gives a small effort/awareness nudge.
           </p>
           {p.others.length > 0 && (
             <div className="text-xs text-slate-500 space-y-0.5">

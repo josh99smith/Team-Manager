@@ -207,7 +207,10 @@ export default async function PortalPage() {
                       {Object.keys(cats).length > 0 &&
                         " · " +
                           Object.entries(cats)
-                            .map(([c, v]) => `${attrNameByKey.get(c) ?? c} ${v}`)
+                            .map(
+                              ([c, v]) =>
+                                `${attrNameByKey.get(c) ?? c} ${v > 0 && v <= 2 ? `+${v}` : v}`
+                            )
                             .join(", ")}
                     </div>
                     {g.notes && (
