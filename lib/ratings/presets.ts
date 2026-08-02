@@ -4,12 +4,24 @@
 export type AttributeSpec = { key: string; name: string; category: string };
 export type StatDef = { key: string; label: string; group: string };
 
+// A starting-ratings profile assignable when adding/editing a player.
+// Attributes start at 60, get `all` added across the board, then per-key
+// boosts (which may be negative) on top.
+export type Archetype = {
+  key: string;
+  name: string;
+  description: string;
+  all?: number;
+  boosts: Record<string, number>;
+};
+
 export type SportPreset = {
   positions: string[];
   attributes: AttributeSpec[];
   positionWeights: Record<string, Record<string, number>>;
   gradeCategories: Record<string, string[]>;
   statDefs: StatDef[];
+  archetypes: Archetype[];
 };
 
 export const SPORTS = ["Football", "Basketball", "Soccer", "Baseball"] as const;
@@ -106,6 +118,14 @@ const FOOTBALL: SportPreset = {
     { key: "fgAtt", label: "FG Att", group: "Kicking" },
     { key: "xpMade", label: "XP Made", group: "Kicking" },
   ],
+  archetypes: [
+    { key: "speedster", name: "Speedster", description: "Elite burst and quickness; strength and polish still coming", boosts: { speed: 18, acceleration: 16, agility: 14, jumping: 8, stamina: 6, strength: -6, awareness: -4 } },
+    { key: "power", name: "Power", description: "Wins with strength and physicality", boosts: { strength: 18, toughness: 12, impactBlocking: 8, runBlock: 8, tackling: 8, blockShedding: 6, speed: -4, agility: -4 } },
+    { key: "highMotor", name: "High Motor", description: "Max effort and coachability; raw skills for now", boosts: { effort: 20, coachability: 14, stamina: 10, discipline: 8, toughness: 6, awareness: -4, throwAccuracy: -8, catching: -8, carrying: -6, runBlock: -6, passBlock: -6, manCoverage: -6, zoneCoverage: -6, kickAccuracy: -6 } },
+    { key: "fieldGeneral", name: "Field General", description: "Smart, disciplined, a leader on the field", boosts: { awareness: 16, playRecognition: 14, leadership: 16, discipline: 10, coachability: 8, speed: -2 } },
+    { key: "technician", name: "Technician", description: "Polished fundamentals ahead of raw athleticism", boosts: { throwAccuracy: 10, catching: 10, ballSecurity: 10, runBlock: 8, passBlock: 8, tackling: 8, zoneCoverage: 8, kickAccuracy: 10, awareness: 6, speed: -2 } },
+    { key: "balanced", name: "Balanced", description: "Solid all-around starting point", all: 4, boosts: {} },
+  ],
 };
 
 const BASKETBALL: SportPreset = {
@@ -166,6 +186,14 @@ const BASKETBALL: SportPreset = {
     { key: "stl", label: "Steals", group: "Hustle" },
     { key: "blk", label: "Blocks", group: "Hustle" },
     { key: "tov", label: "Turnovers", group: "Hustle" },
+  ],
+  archetypes: [
+    { key: "slasher", name: "Slasher", description: "Speed and bounce; jumper still developing", boosts: { speed: 16, acceleration: 14, agility: 12, vertical: 10, insideScoring: 6, threePoint: -6, strength: -4 } },
+    { key: "powerBig", name: "Power Big", description: "Owns the paint and the glass", boosts: { strength: 16, interiorD: 12, defRebound: 12, offRebound: 10, insideScoring: 8, block: 8, toughness: 8, speed: -6, threePoint: -8 } },
+    { key: "highMotor", name: "High Motor", description: "Max effort and coachability; raw skills for now", boosts: { effort: 20, coachability: 14, stamina: 10, discipline: 8, insideScoring: -6, midRange: -6, threePoint: -8, ballHandling: -6 } },
+    { key: "floorGeneral", name: "Floor General", description: "Runs the offense with IQ and vision", boosts: { bballIq: 16, passing: 14, leadership: 14, ballHandling: 10, shotSelection: 10, discipline: 6 } },
+    { key: "sharpshooter", name: "Sharpshooter", description: "Lights out from range", boosts: { threePoint: 16, midRange: 12, freeThrow: 12, shotSelection: 8, bballIq: 6, interiorD: -4, strength: -4 } },
+    { key: "balanced", name: "Balanced", description: "Solid all-around starting point", all: 4, boosts: {} },
   ],
 };
 
@@ -235,6 +263,13 @@ const SOCCER: SportPreset = {
     { key: "minutes", label: "Minutes", group: "General" },
     { key: "yellowCards", label: "Yellow Cards", group: "General" },
     { key: "redCards", label: "Red Cards", group: "General" },
+  ],
+  archetypes: [
+    { key: "speedster", name: "Speedster", description: "Pace to burn; final product still developing", boosts: { pace: 18, acceleration: 16, agility: 12, stamina: 6, strength: -4, marking: -2 } },
+    { key: "power", name: "Powerhouse", description: "Physically dominant in duels and in the air", boosts: { strength: 16, heading: 10, tacklingSoc: 10, jumping: 10, toughness: 10, agility: -4, pace: -2 } },
+    { key: "engine", name: "Engine", description: "Runs all day, gives everything; touch still raw", boosts: { workRate: 20, stamina: 14, coachability: 12, positioning: 4, dribbling: -6, finishing: -6, firstTouch: -4 } },
+    { key: "playmaker", name: "Playmaker", description: "Vision and technique between the lines", boosts: { vision: 16, shortPassing: 12, firstTouch: 12, dribbling: 10, composure: 10, longPassing: 8 } },
+    { key: "balanced", name: "Balanced", description: "Solid all-around starting point", all: 4, boosts: {} },
   ],
 };
 
@@ -307,6 +342,13 @@ const BASEBALL: SportPreset = {
     { key: "er", label: "ER", group: "Pitching" },
     { key: "pitchKs", label: "K", group: "Pitching" },
     { key: "pitchBBs", label: "BB", group: "Pitching" },
+  ],
+  archetypes: [
+    { key: "speedster", name: "Speedster", description: "Burner on the bases and in the field", boosts: { speed: 18, baserunning: 14, agility: 12, range: 10, contact: 4, power: -6 } },
+    { key: "slugger", name: "Slugger", description: "Big power bat; trades some contact and speed", boosts: { power: 18, strength: 14, armStrength: 8, toughness: 6, contact: -2, speed: -4 } },
+    { key: "highMotor", name: "High Motor", description: "Max hustle and coachability; raw skills for now", boosts: { effort: 20, coachability: 14, focus: 10, baseballIq: 6, contact: -6, fielding: -4, power: -6 } },
+    { key: "gamer", name: "Gamer", description: "High baseball IQ and plate discipline", boosts: { baseballIq: 14, plateDiscipline: 12, focus: 12, leadership: 10, fielding: 6, contact: 4 } },
+    { key: "balanced", name: "Balanced", description: "Solid all-around starting point", all: 4, boosts: {} },
   ],
 };
 

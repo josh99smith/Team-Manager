@@ -11,6 +11,7 @@ export default async function NewPlayerPage() {
         action={createPlayer}
         submitLabel="Add player"
         positions={preset.positions}
+        archetypes={preset.archetypes}
       />
     </div>
   );

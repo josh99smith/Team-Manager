@@ -281,6 +281,46 @@ export async function applyGrade(input: GradeInput) {
   return { applied, ovr };
 }
 
+// Apply an archetype's starting-ratings profile to a player, overwriting all
+// current attribute ratings (base 60 + archetype modifiers, clamped 40-95).
+export async function applyArchetype(playerId: string, archetypeKey: string) {
+  const team = await prisma.team.findFirst();
+  const archetype = getPreset(team?.sport).archetypes.find(
+    (a) => a.key === archetypeKey
+  );
+  if (!archetype) return;
+
+  const [defs, player] = await Promise.all([
+    getAttributeDefs(),
+    prisma.player.findUniqueOrThrow({ where: { id: playerId } }),
+  ]);
+  const weights = await getWeightsForPosition(primaryPosition(player.positions));
+
+  const ratings = new Map<string, number>();
+  for (const def of defs) {
+    const value = clamp(
+      DEFAULT_RATING + (archetype.all ?? 0) + (archetype.boosts[def.key] ?? 0),
+      40,
+      95
+    );
+    ratings.set(def.id, value);
+  }
+  const ovr = computeOvr(ratings, weights);
+
+  await prisma.$transaction([
+    ...defs.map((def) =>
+      prisma.playerRating.upsert({
+        where: { playerId_attributeId: { playerId, attributeId: def.id } },
+        create: { playerId, attributeId: def.id, value: ratings.get(def.id)! },
+        update: { value: ratings.get(def.id)!, isOverride: false },
+      })
+    ),
+    prisma.ratingHistory.create({
+      data: { playerId, attributeId: null, value: ovr, reason: "preset" },
+    }),
+  ]);
+}
+
 // Manual coach override of a single attribute.
 export async function overrideAttribute(
   playerId: string,

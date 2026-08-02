@@ -24,6 +24,7 @@ export default async function EditPlayerPage(props: {
         player={player}
         submitLabel="Save changes"
         positions={preset.positions}
+        archetypes={preset.archetypes}
       />
     </div>
   );

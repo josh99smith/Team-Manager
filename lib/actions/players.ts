@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
+import { applyArchetype } from "@/lib/ratings/engine";
 
 function playerDataFromForm(formData: FormData) {
   const num = (key: string) => {
@@ -36,7 +37,12 @@ export async function createPlayer(formData: FormData) {
   const data = playerDataFromForm(formData);
   if (!data.firstName || !data.lastName) throw new Error("Name is required");
   const player = await prisma.player.create({ data });
+
+  const archetype = String(formData.get("archetype") ?? "").trim();
+  if (archetype) await applyArchetype(player.id, archetype);
+
   revalidatePath("/roster");
+  revalidatePath("/ratings");
   redirect(`/roster/${player.id}`);
 }
 
@@ -45,7 +51,13 @@ export async function updatePlayer(id: string, formData: FormData) {
   const data = playerDataFromForm(formData);
   if (!data.firstName || !data.lastName) throw new Error("Name is required");
   await prisma.player.update({ where: { id }, data });
+
+  // Optional re-roll: overwrite current ratings with the chosen archetype.
+  const archetype = String(formData.get("archetype") ?? "").trim();
+  if (archetype) await applyArchetype(id, archetype);
+
   revalidatePath("/roster");
+  revalidatePath("/ratings");
   revalidatePath(`/roster/${id}`);
   redirect(`/roster/${id}`);
 }
