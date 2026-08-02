@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
 import { applyGrade } from "@/lib/ratings/engine";
-import { CATEGORIES } from "@/lib/ratings/defaults";
 
 const clamp100 = (v: number) => Math.min(100, Math.max(0, Math.round(v)));
 
@@ -20,9 +19,10 @@ export async function saveGrade(
   const notes = String(formData.get("notes") ?? "").trim();
 
   const categories: Record<string, number> = {};
-  for (const cat of CATEGORIES) {
-    const raw = String(formData.get(`cat:${cat}`) ?? "").trim();
-    if (raw) categories[cat] = clamp100(parseInt(raw, 10));
+  for (const [key, raw] of formData.entries()) {
+    if (!key.startsWith("cat:")) continue;
+    const value = String(raw).trim();
+    if (value) categories[key.slice(4)] = clamp100(parseInt(value, 10));
   }
 
   if (overall == null && Object.keys(categories).length === 0 && !notes) {

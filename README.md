@@ -4,7 +4,22 @@ A team management app for coaches: roster, scheduling with attendance, tasks,
 and a Madden-style player rating system driven by practice and game grades.
 See [PLAN.md](./PLAN.md) for the full roadmap.
 
-## Phase 2 features (current)
+## Phase 3 features (current)
+
+- **Depth chart** — `/depth-chart` groups players by position, ordered by OVR
+  by default with manual reordering (and one-click reset back to OVR order).
+- **Player/parent portal** — the head coach can create a read-only portal
+  login from any player profile. Portal users see their own OVR, rating
+  trend, report card, attendance, and tasks, and can RSVP (Going / Maybe /
+  Can't go) to upcoming events; coaches see RSVPs on each event page.
+- **Game stat tracking** — a stat book on game/scrimmage pages with
+  sport-appropriate stats; season totals on player profiles; CSV export of
+  season stats and the full ratings grid from the Ratings page.
+- **Multi-sport presets** — Football, Basketball, Soccer, and Baseball, each
+  with its own positions, rating attributes, OVR weight profiles, grade-sheet
+  categories, and stat book. Picked at first-run setup.
+
+## Phase 2 features
 
 - **Player ratings** — every player has 0–99 attributes (Speed, Awareness,
   Throw Accuracy, Run Block, Tackling, …) and a position-weighted Overall

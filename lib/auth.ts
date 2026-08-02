@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 declare module "next-auth" {
   interface User {
     role?: string;
+    playerId?: string | null;
   }
   interface Session {
     user: {
@@ -13,6 +14,7 @@ declare module "next-auth" {
       name?: string | null;
       email?: string | null;
       role: string;
+      playerId?: string | null;
     };
   }
 }
@@ -39,7 +41,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const valid = await compare(password, user.passwordHash);
         if (!valid) return null;
 
-        return { id: user.id, name: user.name, email: user.email, role: user.role };
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          playerId: user.playerId,
+        };
       },
     }),
   ],
@@ -48,6 +56,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id;
         token.role = user.role;
+        token.playerId = user.playerId ?? null;
       }
       return token;
     },
@@ -55,15 +64,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = (token.role as string) ?? "ASSISTANT";
+        session.user.playerId = (token.playerId as string | null) ?? null;
       }
       return session;
     },
   },
 });
 
+// Coach-only guard: portal (PLAYER) accounts cannot mutate team data.
 export async function requireSession() {
   const session = await auth();
   if (!session?.user) throw new Error("Not authenticated");
+  if (session.user.role === "PLAYER") throw new Error("Not authorized");
+  return session;
+}
+
+export async function requirePlayerSession() {
+  const session = await auth();
+  if (!session?.user?.playerId || session.user.role !== "PLAYER") {
+    throw new Error("Not authorized");
+  }
   return session;
 }
 

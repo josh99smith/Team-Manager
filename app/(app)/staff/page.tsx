@@ -10,6 +10,7 @@ export default async function StaffPage() {
   const isHeadCoach = session?.user.role === "HEAD_COACH";
 
   const users = await prisma.user.findMany({
+    where: { role: { not: "PLAYER" } },
     orderBy: [{ role: "asc" }, { name: "asc" }],
   });
 

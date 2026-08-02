@@ -1,10 +1,6 @@
 import { prisma } from "@/lib/prisma";
-import {
-  DEFAULT_ATTRIBUTES,
-  DEFAULT_POSITION_WEIGHTS,
-  DEFAULT_RATING,
-  primaryPosition,
-} from "./defaults";
+import { DEFAULT_RATING, primaryPosition } from "./defaults";
+import { getPreset } from "./presets";
 import type { AttributeDefinition } from "@prisma/client";
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
@@ -18,19 +14,23 @@ const EVENT_MULTIPLIERS: Record<string, number> = {
 // A category grade this many points above/below the current rating produces ±1 (pre-multiplier).
 const GRADE_SENSITIVITY = 15;
 
-// Seed attribute definitions + position weights if the tables are empty.
+// Seed attribute definitions + position weights for the team's sport if the
+// tables are empty.
 export async function ensureRatingDefaults() {
   const count = await prisma.attributeDefinition.count();
   if (count > 0) return;
 
+  const team = await prisma.team.findFirst();
+  const preset = getPreset(team?.sport);
+
   await prisma.attributeDefinition.createMany({
-    data: DEFAULT_ATTRIBUTES.map((a, i) => ({ ...a, sort: i })),
+    data: preset.attributes.map((a, i) => ({ ...a, sort: i })),
   });
   const defs = await prisma.attributeDefinition.findMany();
   const byKey = new Map(defs.map((d) => [d.key, d.id]));
 
   const weightRows: { position: string; attributeId: string; weight: number }[] = [];
-  for (const [position, weights] of Object.entries(DEFAULT_POSITION_WEIGHTS)) {
+  for (const [position, weights] of Object.entries(preset.positionWeights)) {
     for (const [key, weight] of Object.entries(weights)) {
       const attributeId = byKey.get(key);
       if (attributeId) weightRows.push({ position, attributeId, weight });

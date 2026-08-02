@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: "/", label: "Dashboard" },
   { href: "/roster", label: "Roster" },
   { href: "/ratings", label: "Ratings" },
+  { href: "/depth-chart", label: "Depth" },
   { href: "/calendar", label: "Calendar" },
   { href: "/tasks", label: "Tasks" },
   { href: "/staff", label: "Staff" },
@@ -22,6 +23,7 @@ export default async function AppLayout({
     const userCount = await prisma.user.count();
     redirect(userCount === 0 ? "/setup" : "/login");
   }
+  if (session.user.role === "PLAYER") redirect("/portal");
 
   const team = await prisma.team.findFirst();
 

@@ -41,6 +41,7 @@ export async function completeSetup(
 
   const teamName = String(formData.get("teamName") ?? "").trim();
   const season = String(formData.get("season") ?? "").trim();
+  const sport = String(formData.get("sport") ?? "Football").trim() || "Football";
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
@@ -53,7 +54,7 @@ export async function completeSetup(
   }
 
   await prisma.team.create({
-    data: { name: teamName, season },
+    data: { name: teamName, season, sport },
   });
   await prisma.user.create({
     data: {

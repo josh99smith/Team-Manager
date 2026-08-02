@@ -6,7 +6,6 @@ import {
   getOvrForPlayers,
 } from "@/lib/ratings/engine";
 import {
-  CATEGORIES,
   DEFAULT_RATING,
   ratingTier,
   primaryPosition,
@@ -51,6 +50,7 @@ export default async function RatingsPage() {
     movers.set(h.playerId, h.value - firstSnap.get(h.playerId)!);
   }
 
+  const CATEGORIES = [...new Set(defs.map((d) => d.category))];
   const defsByCategory = CATEGORIES.map((cat) => ({
     cat,
     ids: defs.filter((d) => d.category === cat).map((d) => d.id),
@@ -81,11 +81,19 @@ export default async function RatingsPage() {
             ratings move with practice and game grades
           </p>
         </div>
-        {session?.user.role === "HEAD_COACH" && (
-          <Link href="/ratings/weights" className="btn-secondary">
-            Edit position weights
-          </Link>
-        )}
+        <div className="flex gap-2 flex-wrap">
+          <a href="/api/export/ratings" download className="btn-secondary">
+            ⬇ Ratings CSV
+          </a>
+          <a href="/api/export/stats" download className="btn-secondary">
+            ⬇ Season stats CSV
+          </a>
+          {session?.user.role === "HEAD_COACH" && (
+            <Link href="/ratings/weights" className="btn-secondary">
+              Edit position weights
+            </Link>
+          )}
+        </div>
       </div>
 
       {rows.length === 0 ? (

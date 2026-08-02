@@ -1,14 +1,16 @@
 import type { Player } from "@prisma/client";
-import { POSITIONS, PLAYER_STATUSES, PLAYER_STATUS_LABELS } from "@/lib/constants";
+import { PLAYER_STATUSES, PLAYER_STATUS_LABELS } from "@/lib/constants";
 
 export function PlayerForm({
   action,
   player,
   submitLabel,
+  positions,
 }: {
   action: (formData: FormData) => Promise<void>;
   player?: Player;
   submitLabel: string;
+  positions: string[];
 }) {
   const selectedPositions = new Set(
     (player?.positions ?? "").split(",").filter(Boolean)
@@ -132,7 +134,7 @@ export function PlayerForm({
         <div>
           <span className="label">Positions</span>
           <div className="flex flex-wrap gap-2">
-            {POSITIONS.map((pos) => (
+            {positions.map((pos) => (
               <label
                 key={pos}
                 className="flex items-center gap-1.5 border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm cursor-pointer has-checked:bg-slate-900 has-checked:text-white has-checked:border-slate-900"

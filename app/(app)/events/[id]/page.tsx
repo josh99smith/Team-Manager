@@ -8,7 +8,9 @@ import { formatDateTime, formatTime } from "@/lib/format";
 import { AttendanceGrid } from "@/components/attendance-grid";
 import { ConfirmButton } from "@/components/confirm-button";
 import { GradeSheet } from "@/components/grade-sheet";
+import { StatBook } from "@/components/stat-book";
 import { getOvrForPlayers } from "@/lib/ratings/engine";
+import { getTeamPreset } from "@/lib/team";
 
 export default async function EventPage(props: {
   params: Promise<{ id: string }>;
@@ -17,7 +19,12 @@ export default async function EventPage(props: {
   const session = await auth();
   const event = await prisma.event.findUnique({
     where: { id },
-    include: { attendance: true, grades: { include: { coach: true } } },
+    include: {
+      attendance: true,
+      grades: { include: { coach: true } },
+      rsvps: { include: { player: true } },
+      statLines: true,
+    },
   });
   if (!event) notFound();
 
@@ -106,6 +113,35 @@ export default async function EventPage(props: {
         </div>
       )}
 
+      {event.rsvps.length > 0 && (
+        <div className="card p-6 mb-6">
+          <h2 className="font-semibold mb-3">
+            Player RSVPs{" "}
+            <span className="text-sm font-normal text-slate-400">
+              ({event.rsvps.filter((r) => r.status === "GOING").length} going ·{" "}
+              {event.rsvps.filter((r) => r.status === "MAYBE").length} maybe ·{" "}
+              {event.rsvps.filter((r) => r.status === "NOT_GOING").length} out)
+            </span>
+          </h2>
+          <div className="flex flex-wrap gap-1.5">
+            {event.rsvps.map((r) => (
+              <span
+                key={r.id}
+                className={`badge ${
+                  r.status === "GOING"
+                    ? "bg-green-100 text-green-800"
+                    : r.status === "MAYBE"
+                      ? "bg-yellow-100 text-yellow-800"
+                      : "bg-red-100 text-red-800"
+                }`}
+              >
+                {r.player.firstName} {r.player.lastName}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="card p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold">Attendance</h2>
@@ -154,6 +190,29 @@ export default async function EventPage(props: {
               players={gradablePlayers}
               myGrades={myGrades}
               allGrades={event.grades}
+              gradeCategories={(await getTeamPreset()).gradeCategories}
+            />
+          )}
+        </div>
+      )}
+
+      {(event.type === "GAME" || event.type === "SCRIMMAGE") && (
+        <div className="card p-6 mt-6">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-semibold">Stat book</h2>
+            <span className="text-sm text-slate-500">
+              {event.statLines.filter((s) => s.statsJson !== "{}").length}/
+              {gradablePlayers.length} entered
+            </span>
+          </div>
+          {gradablePlayers.length === 0 ? (
+            <p className="text-sm text-slate-400">No players to track.</p>
+          ) : (
+            <StatBook
+              eventId={event.id}
+              players={gradablePlayers}
+              statLines={event.statLines}
+              statDefs={(await getTeamPreset()).statDefs}
             />
           )}
         </div>

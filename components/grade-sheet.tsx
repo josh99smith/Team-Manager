@@ -1,10 +1,6 @@
 import type { Grade, User } from "@prisma/client";
 import { saveGrade } from "@/lib/actions/grades";
-import {
-  POSITION_GRADE_CATEGORIES,
-  primaryPosition,
-  ratingTier,
-} from "@/lib/ratings/defaults";
+import { primaryPosition, ratingTier } from "@/lib/ratings/defaults";
 
 function gradeLetter(v: number): string {
   if (v >= 97) return "A+";
@@ -35,11 +31,13 @@ export function GradeSheet({
   players,
   myGrades,
   allGrades,
+  gradeCategories,
 }: {
   eventId: string;
   players: PlayerRow[];
   myGrades: Map<string, Grade>; // playerId -> current coach's grade
   allGrades: (Grade & { coach: User })[];
+  gradeCategories: Record<string, string[]>; // position -> categories
 }) {
   const othersByPlayer = new Map<string, (Grade & { coach: User })[]>();
   for (const g of allGrades) {
@@ -52,8 +50,9 @@ export function GradeSheet({
       {players.map((p) => {
         const mine = myGrades.get(p.id);
         const categories =
-          POSITION_GRADE_CATEGORIES[primaryPosition(p.positions)] ??
-          POSITION_GRADE_CATEGORIES.ATH;
+          gradeCategories[primaryPosition(p.positions)] ??
+          Object.values(gradeCategories)[0] ??
+          [];
         const myCategories: Record<string, number> = mine
           ? JSON.parse(mine.categoriesJson || "{}")
           : {};

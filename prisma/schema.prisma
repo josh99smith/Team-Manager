@@ -7,7 +7,8 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Roles: HEAD_COACH | ASSISTANT | POSITION_COACH  (SQLite has no enums)
+// Roles: HEAD_COACH | ASSISTANT | POSITION_COACH | PLAYER  (SQLite has no enums)
+// PLAYER users are read-only portal accounts linked to a Player row.
 model User {
   id            String   @id @default(cuid())
   email         String   @unique
@@ -15,7 +16,9 @@ model User {
   passwordHash  String
   role          String   @default("ASSISTANT")
   positionGroup String?
+  playerId      String?  @unique
   createdAt     DateTime @default(now())
+  player        Player?  @relation(fields: [playerId], references: [id], onDelete: Cascade)
   tasks         Task[]   @relation("TaskAssigneeUser")
   grades        Grade[]
 }
@@ -50,6 +53,10 @@ model Player {
   ratings        PlayerRating[]
   ratingHistory  RatingHistory[]
   grades         Grade[]
+  portalUser     User?
+  depthEntries   DepthChartEntry[]
+  rsvps          Rsvp[]
+  statLines      StatLine[]
 }
 
 // Type: PRACTICE | GAME | SCRIMMAGE | MEETING | WORKOUT
@@ -67,6 +74,45 @@ model Event {
   attendance   Attendance[]
   tasks        Task[]
   grades       Grade[]
+  rsvps        Rsvp[]
+  statLines    StatLine[]
+}
+
+// Manual depth ordering per position; players without an entry are appended
+// in OVR order.
+model DepthChartEntry {
+  id       String @id @default(cuid())
+  position String
+  playerId String
+  rank     Int
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([position, playerId])
+}
+
+// Player's own attendance intent, set from the portal. Status: GOING | NOT_GOING | MAYBE
+model Rsvp {
+  id       String @id @default(cuid())
+  playerId String
+  eventId  String
+  status   String @default("GOING")
+  player   Player @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  event    Event  @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, eventId])
+}
+
+// Per-player stats for a game/scrimmage. statsJson: {"passYds": 210, ...}
+model StatLine {
+  id        String   @id @default(cuid())
+  playerId  String
+  eventId   String
+  statsJson String   @default("{}")
+  updatedAt DateTime @updatedAt
+  player    Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, eventId])
 }
 
 // ---- Phase 2: ratings & grading ----

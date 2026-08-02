@@ -10,6 +10,9 @@ import {
 } from "@/lib/constants";
 import { formatDate, formatDateTime, formatHeight, formatShortDate } from "@/lib/format";
 import { ConfirmButton } from "@/components/confirm-button";
+import { auth } from "@/lib/auth";
+import { deletePlayerAccount } from "@/lib/actions/portal";
+import { PortalAccountForm } from "./portal-account";
 import { RatingCard, OvrBadge } from "@/components/rating-card";
 import { TrendChart } from "@/components/trend-chart";
 import {
@@ -19,6 +22,8 @@ import {
   computeOvr,
 } from "@/lib/ratings/engine";
 import { primaryPosition } from "@/lib/ratings/defaults";
+import { getTeamPreset } from "@/lib/team";
+import { sumStatLines } from "@/lib/stats";
 
 const STATUS_BADGES: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-800",
@@ -30,9 +35,11 @@ export default async function PlayerPage(props: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await props.params;
+  const session = await auth();
   const player = await prisma.player.findUnique({
     where: { id },
     include: {
+      portalUser: true,
       attendance: {
         include: { event: true },
         orderBy: { event: { startsAt: "desc" } },
@@ -75,6 +82,14 @@ export default async function PlayerPage(props: {
     label: formatShortDate(h.createdAt),
     value: h.value,
   }));
+
+  const [preset, statLines] = await Promise.all([
+    getTeamPreset(),
+    prisma.statLine.findMany({ where: { playerId: id } }),
+  ]);
+  const statTotals = sumStatLines(statLines);
+  const gamesWithStats = statLines.filter((l) => l.statsJson !== "{}").length;
+  const seasonStats = preset.statDefs.filter((d) => (statTotals[d.key] ?? 0) !== 0);
 
   return (
     <div>
@@ -207,8 +222,51 @@ export default async function PlayerPage(props: {
               {player.notes || "—"}
             </p>
           </div>
+          {session?.user.role === "HEAD_COACH" && (
+            <div className="card p-6">
+              <h2 className="font-semibold mb-3">Player portal</h2>
+              {player.portalUser ? (
+                <div className="flex items-center justify-between gap-3">
+                  <div className="text-sm">
+                    <div className="text-slate-700">{player.portalUser.email}</div>
+                    <div className="text-xs text-slate-400">
+                      Read-only access: report card, schedule, RSVP
+                    </div>
+                  </div>
+                  <ConfirmButton
+                    action={deletePlayerAccount.bind(null, player.id)}
+                    confirmText="Remove this player's portal login?"
+                    className="btn-danger text-xs px-2 py-1"
+                  >
+                    Remove
+                  </ConfirmButton>
+                </div>
+              ) : (
+                <PortalAccountForm playerId={player.id} />
+              )}
+            </div>
+          )}
         </div>
       </div>
+
+      {seasonStats.length > 0 && (
+        <div className="card p-6 mt-6">
+          <h2 className="font-semibold mb-3">
+            Season stats{" "}
+            <span className="text-sm font-normal text-slate-400">
+              ({gamesWithStats} game{gamesWithStats === 1 ? "" : "s"})
+            </span>
+          </h2>
+          <div className="flex flex-wrap gap-3">
+            {seasonStats.map((d) => (
+              <div key={d.key} className="rounded-lg bg-slate-50 px-4 py-2.5 text-center">
+                <div className="text-xl font-bold">{statTotals[d.key]}</div>
+                <div className="text-xs text-slate-500">{d.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="grid md:grid-cols-2 gap-6 mt-6">
         <div className="card p-6">

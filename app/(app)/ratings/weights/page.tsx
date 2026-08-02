@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { saveWeights } from "@/lib/actions/ratings";
 import { getAttributeDefs } from "@/lib/ratings/engine";
-import { POSITIONS } from "@/lib/constants";
+import { getTeamPreset } from "@/lib/team";
 
 export default async function WeightsPage(props: {
   searchParams: Promise<{ position?: string }>;
@@ -13,9 +13,10 @@ export default async function WeightsPage(props: {
   if (session?.user.role !== "HEAD_COACH") redirect("/ratings");
 
   const { position: posParam } = await props.searchParams;
-  const position = POSITIONS.includes(posParam as (typeof POSITIONS)[number])
+  const POSITIONS = (await getTeamPreset()).positions;
+  const position = POSITIONS.includes(posParam ?? "")
     ? (posParam as string)
-    : "QB";
+    : POSITIONS[0];
 
   const defs = await getAttributeDefs();
   const weights = await prisma.positionWeight.findMany({ where: { position } });

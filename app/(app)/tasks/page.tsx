@@ -10,7 +10,10 @@ export default async function TasksPage() {
       include: { assigneeUser: true, assigneePlayer: true, event: true },
       orderBy: [{ dueDate: "asc" }, { createdAt: "desc" }],
     }),
-    prisma.user.findMany({ orderBy: { name: "asc" } }),
+    prisma.user.findMany({
+      where: { role: { not: "PLAYER" } },
+      orderBy: { name: "asc" },
+    }),
     prisma.player.findMany({
       where: { status: { in: ["ACTIVE", "INJURED"] } },
       orderBy: { lastName: "asc" },

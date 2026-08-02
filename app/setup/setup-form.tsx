@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { completeSetup } from "@/lib/actions/auth-actions";
+import { SPORTS } from "@/lib/ratings/presets";
 
 export function SetupForm() {
   const [state, formAction, pending] = useActionState(completeSetup, {
@@ -23,6 +24,21 @@ export function SetupForm() {
           </label>
           <input id="season" name="season" className="input" placeholder="2026" />
         </div>
+      </div>
+      <div>
+        <label className="label" htmlFor="sport">
+          Sport
+        </label>
+        <select id="sport" name="sport" className="input" defaultValue="Football">
+          {SPORTS.map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
+          ))}
+        </select>
+        <p className="text-xs text-slate-400 mt-1">
+          Sets the positions, rating attributes, and stat book for your team.
+        </p>
       </div>
       <div>
         <label className="label" htmlFor="name">
