@@ -1,10 +1,28 @@
 # Team Manager
 
-A team management app for coaches: roster, scheduling with attendance, tasks —
-and (coming in Phase 2) a Madden-style player rating system driven by practice
-and game grades. See [PLAN.md](./PLAN.md) for the full roadmap.
+A team management app for coaches: roster, scheduling with attendance, tasks,
+and a Madden-style player rating system driven by practice and game grades.
+See [PLAN.md](./PLAN.md) for the full roadmap.
 
-## Phase 1 features (current)
+## Phase 2 features (current)
+
+- **Player ratings** — every player has 0–99 attributes (Speed, Awareness,
+  Throw Accuracy, Run Block, Tackling, …) and a position-weighted Overall
+  (OVR) with Madden-style tiers (90+ elite → <60 project). Ratings grid at
+  `/ratings`, full attribute card with manual overrides on each player profile.
+- **Grading** — grade sheets on practice/game/scrimmage/workout pages: a quick
+  0–100 overall plus per-category grades relevant to the player's position,
+  with notes, per coach. Players who attended are listed automatically.
+- **Grades move ratings** — each grade nudges the position-relevant attributes
+  (capped ±2 per event, games count double); a quick overall alone gives a
+  small effort/awareness nudge. Re-grading reverts the old adjustment first.
+- **History & trends** — OVR trend chart and recent-grades report card on the
+  player profile; "top movers — last 7 days" on the dashboard and a 7-day
+  column in the ratings grid.
+- **Weight profiles** — the head coach can edit each position's attribute
+  weights at `/ratings/weights`.
+
+## Phase 1 features
 
 - **Auth & roles** — email/password sign-in; Head Coach, Assistant, and
   Position Coach roles. First run walks you through creating the team and the

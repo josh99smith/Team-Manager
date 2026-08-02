@@ -1,0 +1,95 @@
+import Link from "next/link";
+import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
+import { saveWeights } from "@/lib/actions/ratings";
+import { getAttributeDefs } from "@/lib/ratings/engine";
+import { POSITIONS } from "@/lib/constants";
+
+export default async function WeightsPage(props: {
+  searchParams: Promise<{ position?: string }>;
+}) {
+  const session = await auth();
+  if (session?.user.role !== "HEAD_COACH") redirect("/ratings");
+
+  const { position: posParam } = await props.searchParams;
+  const position = POSITIONS.includes(posParam as (typeof POSITIONS)[number])
+    ? (posParam as string)
+    : "QB";
+
+  const defs = await getAttributeDefs();
+  const weights = await prisma.positionWeight.findMany({ where: { position } });
+  const weightByAttr = new Map(weights.map((w) => [w.attributeId, w.weight]));
+  const total = weights.reduce((a, w) => a + w.weight, 0);
+
+  const categories: { name: string; defs: typeof defs }[] = [];
+  for (const d of defs) {
+    let cat = categories.find((c) => c.name === d.category);
+    if (!cat) {
+      cat = { name: d.category, defs: [] };
+      categories.push(cat);
+    }
+    cat.defs.push(d);
+  }
+
+  return (
+    <div>
+      <h1 className="text-2xl font-bold mb-2">Position weight profiles</h1>
+      <p className="text-slate-500 text-sm mb-6 max-w-2xl">
+        Weights control how each attribute counts toward a player&apos;s OVR at
+        this position. Set a weight of 0 to exclude an attribute. Weights are
+        relative — they don&apos;t need to add up to 100 (current total:{" "}
+        {total}).
+      </p>
+
+      <div className="flex flex-wrap gap-1 mb-6">
+        {POSITIONS.map((pos) => (
+          <Link
+            key={pos}
+            href={`/ratings/weights?position=${pos}`}
+            className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
+              pos === position
+                ? "bg-slate-900 text-white"
+                : "text-slate-600 hover:bg-slate-200"
+            }`}
+          >
+            {pos}
+          </Link>
+        ))}
+      </div>
+
+      <form action={saveWeights.bind(null, position)} className="max-w-3xl">
+        <div className="card p-6 grid sm:grid-cols-2 gap-x-8 gap-y-6 mb-4">
+          {categories.map((cat) => (
+            <div key={cat.name}>
+              <h3 className="text-xs uppercase tracking-wide text-slate-500 mb-2">
+                {cat.name}
+              </h3>
+              <div className="space-y-1.5">
+                {cat.defs.map((d) => (
+                  <div key={d.id} className="flex items-center justify-between gap-3">
+                    <label htmlFor={`w-${d.id}`} className="text-sm text-slate-700">
+                      {d.name}
+                    </label>
+                    <input
+                      id={`w-${d.id}`}
+                      name={`w:${d.id}`}
+                      type="number"
+                      min={0}
+                      max={100}
+                      defaultValue={weightByAttr.get(d.id) ?? 0}
+                      className="w-16 rounded-md border border-slate-200 px-1.5 py-0.5 text-sm text-right"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+        <button type="submit" className="btn-primary">
+          Save {position} weights
+        </button>
+      </form>
+    </div>
+  );
+}

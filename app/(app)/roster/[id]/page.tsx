@@ -8,8 +8,17 @@ import {
   PLAYER_STATUS_LABELS,
   EVENT_TYPE_LABELS,
 } from "@/lib/constants";
-import { formatDate, formatDateTime, formatHeight } from "@/lib/format";
+import { formatDate, formatDateTime, formatHeight, formatShortDate } from "@/lib/format";
 import { ConfirmButton } from "@/components/confirm-button";
+import { RatingCard, OvrBadge } from "@/components/rating-card";
+import { TrendChart } from "@/components/trend-chart";
+import {
+  getAttributeDefs,
+  getEffectiveRatings,
+  getWeightsForPosition,
+  computeOvr,
+} from "@/lib/ratings/engine";
+import { primaryPosition } from "@/lib/ratings/defaults";
 
 const STATUS_BADGES: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-800",
@@ -43,10 +52,36 @@ export default async function PlayerPage(props: {
     attendanceCounts.map((c) => [c.status, c._count])
   );
 
+  const defs = await getAttributeDefs();
+  const [ratings, weights, overrideRows, ovrHistory, grades] = await Promise.all([
+    getEffectiveRatings(id, defs),
+    getWeightsForPosition(primaryPosition(player.positions)),
+    prisma.playerRating.findMany({ where: { playerId: id, isOverride: true } }),
+    prisma.ratingHistory.findMany({
+      where: { playerId: id, attributeId: null },
+      orderBy: { createdAt: "asc" },
+      take: 50,
+    }),
+    prisma.grade.findMany({
+      where: { playerId: id },
+      include: { event: true, coach: true },
+      orderBy: { createdAt: "desc" },
+      take: 10,
+    }),
+  ]);
+  const ovr = computeOvr(ratings, weights);
+  const overrides = new Set(overrideRows.map((r) => r.attributeId));
+  const trendPoints = ovrHistory.map((h) => ({
+    label: formatShortDate(h.createdAt),
+    value: h.value,
+  }));
+
   return (
     <div>
       <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
-        <div>
+        <div className="flex items-start gap-4">
+          <OvrBadge ovr={ovr} />
+          <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold">
               {player.jersey != null && (
@@ -62,6 +97,7 @@ export default async function PlayerPage(props: {
             {player.positions || "No position"}
             {player.classYear ? ` · ${player.classYear}` : ""}
           </p>
+          </div>
         </div>
         <div className="flex gap-2">
           <Link href={`/roster/${player.id}/edit`} className="btn-secondary">
@@ -172,6 +208,82 @@ export default async function PlayerPage(props: {
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-6 mt-6">
+        <div className="card p-6">
+          <h2 className="font-semibold mb-3">OVR trend</h2>
+          <TrendChart points={trendPoints} />
+        </div>
+        <div className="card p-6">
+          <h2 className="font-semibold mb-3">Recent grades</h2>
+          {grades.length === 0 ? (
+            <p className="text-sm text-slate-400">
+              No grades yet — grade this player from a practice or game page.
+            </p>
+          ) : (
+            <ul className="divide-y divide-slate-100 text-sm">
+              {grades.map((g) => {
+                const cats: Record<string, number> = JSON.parse(
+                  g.categoriesJson || "{}"
+                );
+                return (
+                  <li key={g.id} className="py-2.5">
+                    <div className="flex justify-between gap-2">
+                      <Link
+                        href={`/events/${g.eventId}`}
+                        className="font-medium hover:underline truncate"
+                      >
+                        {EVENT_TYPE_LABELS[g.event.type]}
+                        {g.event.opponent ? ` vs ${g.event.opponent}` : ""} ·{" "}
+                        {formatShortDate(g.event.startsAt)}
+                      </Link>
+                      {g.overall != null && (
+                        <span className="badge bg-slate-900 text-white shrink-0">
+                          {g.overall}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-xs text-slate-500 mt-0.5">
+                      {g.coach.name}
+                      {Object.keys(cats).length > 0 &&
+                        " · " +
+                          Object.entries(cats)
+                            .map(([c, v]) => `${c} ${v}`)
+                            .join(", ")}
+                    </div>
+                    {g.notes && (
+                      <div className="text-xs text-slate-600 mt-0.5">
+                        “{g.notes}”
+                      </div>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </div>
+      </div>
+
+      <div className="card p-6 mt-6">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h2 className="font-semibold">
+            Attributes{" "}
+            <span className="text-slate-400 font-normal text-sm">
+              ({primaryPosition(player.positions)} weighted · • counts toward OVR)
+            </span>
+          </h2>
+          <span className="text-xs text-slate-400">
+            Edit a value and press ✓ to override. Amber = manually overridden.
+          </span>
+        </div>
+        <RatingCard
+          playerId={player.id}
+          defs={defs}
+          ratings={ratings}
+          weights={weights}
+          overrides={overrides}
+        />
       </div>
     </div>
   );

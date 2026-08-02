@@ -1,12 +1,67 @@
 import { PrismaClient } from "@prisma/client";
 import { hash } from "bcryptjs";
+import {
+  DEFAULT_ATTRIBUTES,
+  DEFAULT_POSITION_WEIGHTS,
+  DEFAULT_RATING,
+  primaryPosition,
+} from "../lib/ratings/defaults";
 
 const prisma = new PrismaClient();
 
+// Seed attribute definitions + position weight profiles (idempotent).
+async function seedRatingDefaults() {
+  if ((await prisma.attributeDefinition.count()) > 0) return;
+  await prisma.attributeDefinition.createMany({
+    data: DEFAULT_ATTRIBUTES.map((a, i) => ({ ...a, sort: i })),
+  });
+  const defs = await prisma.attributeDefinition.findMany();
+  const byKey = new Map(defs.map((d) => [d.key, d.id]));
+  const rows: { position: string; attributeId: string; weight: number }[] = [];
+  for (const [position, weights] of Object.entries(DEFAULT_POSITION_WEIGHTS)) {
+    for (const [key, weight] of Object.entries(weights)) {
+      const attributeId = byKey.get(key);
+      if (attributeId) rows.push({ position, attributeId, weight });
+    }
+  }
+  await prisma.positionWeight.createMany({ data: rows });
+  console.log(`Seeded ${defs.length} attributes and default position weights.`);
+}
+
+// Give players without ratings a varied-but-deterministic starting profile.
+async function seedPlayerRatings() {
+  const players = await prisma.player.findMany({
+    where: { ratings: { none: {} } },
+  });
+  if (players.length === 0) return;
+  const defs = await prisma.attributeDefinition.findMany();
+
+  for (const [pi, p] of players.entries()) {
+    const pos = primaryPosition(p.positions);
+    const weights = DEFAULT_POSITION_WEIGHTS[pos] ?? {};
+    await prisma.playerRating.createMany({
+      data: defs.map((d, di) => {
+        // Deterministic pseudo-variance; weighted attributes skew higher.
+        const wiggle = ((pi * 7 + di * 13) % 21) - 10; // -10..+10
+        const bonus = d.key in weights ? 8 : 0;
+        const value = Math.min(
+          99,
+          Math.max(35, DEFAULT_RATING + bonus + wiggle)
+        );
+        return { playerId: p.id, attributeId: d.id, value };
+      }),
+    });
+  }
+  console.log(`Seeded starting ratings for ${players.length} players.`);
+}
+
 async function main() {
+  await seedRatingDefaults();
+
   const userCount = await prisma.user.count();
   if (userCount > 0) {
-    console.log("Database already has users — skipping seed.");
+    await seedPlayerRatings();
+    console.log("Database already has users — skipped sample team data.");
     return;
   }
 
@@ -96,6 +151,8 @@ async function main() {
       { title: "Set up game-day equipment checklist", status: "DONE" },
     ],
   });
+
+  await seedPlayerRatings();
 
   console.log("Seeded: 1 team, 2 coaches, 10 players, 5 events, 4 tasks.");
   console.log("Login: coach@example.com / password123");

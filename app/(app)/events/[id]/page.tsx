@@ -1,19 +1,23 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { deleteEvent } from "@/lib/actions/events";
 import { EVENT_TYPE_LABELS, EVENT_TYPE_COLORS } from "@/lib/constants";
 import { formatDateTime, formatTime } from "@/lib/format";
 import { AttendanceGrid } from "@/components/attendance-grid";
 import { ConfirmButton } from "@/components/confirm-button";
+import { GradeSheet } from "@/components/grade-sheet";
+import { getOvrForPlayers } from "@/lib/ratings/engine";
 
 export default async function EventPage(props: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await props.params;
+  const session = await auth();
   const event = await prisma.event.findUnique({
     where: { id },
-    include: { attendance: true },
+    include: { attendance: true, grades: { include: { coach: true } } },
   });
   if (!event) notFound();
 
@@ -21,9 +25,33 @@ export default async function EventPage(props: {
     where: { status: { in: ["ACTIVE", "INJURED"] } },
     orderBy: [{ jersey: "asc" }, { lastName: "asc" }],
   });
+  const ovrs = await getOvrForPlayers(players);
 
   const statusByPlayer = Object.fromEntries(
     event.attendance.map((a) => [a.playerId, a.status])
+  );
+
+  // Grade players who attended; fall back to the whole active roster if
+  // attendance hasn't been taken yet.
+  const attendedIds = new Set(
+    event.attendance
+      .filter((a) => a.status === "PRESENT" || a.status === "LATE")
+      .map((a) => a.playerId)
+  );
+  const gradablePlayers = (
+    attendedIds.size > 0 ? players.filter((p) => attendedIds.has(p.id)) : players
+  ).map((p) => ({
+    id: p.id,
+    name: `${p.firstName} ${p.lastName}`,
+    jersey: p.jersey,
+    positions: p.positions,
+    ovr: ovrs.get(p.id) ?? 60,
+  }));
+
+  const myGrades = new Map(
+    event.grades
+      .filter((g) => g.coachId === session?.user.id)
+      .map((g) => [g.playerId, g])
   );
 
   const title =
@@ -78,7 +106,7 @@ export default async function EventPage(props: {
         </div>
       )}
 
-      <div className="card p-6">
+      <div className="card p-6 mb-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold">Attendance</h2>
           <span className="text-sm text-slate-500">
@@ -102,6 +130,34 @@ export default async function EventPage(props: {
           />
         )}
       </div>
+
+      {(event.type === "PRACTICE" ||
+        event.type === "GAME" ||
+        event.type === "SCRIMMAGE" ||
+        event.type === "WORKOUT") && (
+        <div className="card p-6">
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-semibold">Grade sheet</h2>
+            <span className="text-sm text-slate-500">
+              {new Set(event.grades.map((g) => g.playerId)).size}/
+              {gradablePlayers.length} graded
+              {attendedIds.size === 0 && players.length > 0
+                ? " · showing full roster (no attendance taken)"
+                : ""}
+            </span>
+          </div>
+          {gradablePlayers.length === 0 ? (
+            <p className="text-sm text-slate-400">No players to grade.</p>
+          ) : (
+            <GradeSheet
+              eventId={event.id}
+              players={gradablePlayers}
+              myGrades={myGrades}
+              allGrades={event.grades}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }

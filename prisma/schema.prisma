@@ -17,6 +17,7 @@ model User {
   positionGroup String?
   createdAt     DateTime @default(now())
   tasks         Task[]   @relation("TaskAssigneeUser")
+  grades        Grade[]
 }
 
 model Team {
@@ -46,6 +47,9 @@ model Player {
   createdAt      DateTime     @default(now())
   attendance     Attendance[]
   tasks          Task[]       @relation("TaskAssigneePlayer")
+  ratings        PlayerRating[]
+  ratingHistory  RatingHistory[]
+  grades         Grade[]
 }
 
 // Type: PRACTICE | GAME | SCRIMMAGE | MEETING | WORKOUT
@@ -62,6 +66,80 @@ model Event {
   createdAt    DateTime     @default(now())
   attendance   Attendance[]
   tasks        Task[]
+  grades       Grade[]
+}
+
+// ---- Phase 2: ratings & grading ----
+
+// Category: Physical | Mental | Ball Skills | Blocking | Defense | Kicking | Intangibles
+model AttributeDefinition {
+  id       String           @id @default(cuid())
+  key      String           @unique // e.g. "speed"
+  name     String // e.g. "Speed"
+  category String
+  sort     Int              @default(0)
+  ratings  PlayerRating[]
+  history  RatingHistory[]
+  weights  PositionWeight[]
+}
+
+// Relative weight of an attribute in a position's overall (OVR) formula.
+model PositionWeight {
+  id          String              @id @default(cuid())
+  position    String // e.g. "QB"
+  attributeId String
+  weight      Int // 0-100, relative
+  attribute   AttributeDefinition @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@unique([position, attributeId])
+}
+
+model PlayerRating {
+  id          String              @id @default(cuid())
+  playerId    String
+  attributeId String
+  value       Int // 0-99
+  isOverride  Boolean             @default(false)
+  updatedAt   DateTime            @updatedAt
+  player      Player              @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  attribute   AttributeDefinition @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, attributeId])
+}
+
+// Snapshot written whenever a rating changes. attributeId null = OVR snapshot.
+model RatingHistory {
+  id          String               @id @default(cuid())
+  playerId    String
+  attributeId String?
+  value       Int
+  eventId     String?
+  reason      String               @default("") // "grade" | "override"
+  createdAt   DateTime             @default(now())
+  player      Player               @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  attribute   AttributeDefinition? @relation(fields: [attributeId], references: [id], onDelete: Cascade)
+
+  @@index([playerId, attributeId, createdAt])
+}
+
+// One grade per player per event per coach.
+// categoriesJson: {"Ball Skills": 78, ...}; appliedJson: {"<attributeId>": 2, ...}
+model Grade {
+  id             String   @id @default(cuid())
+  playerId       String
+  eventId        String
+  coachId        String
+  overall        Int? // 0-100 quick grade
+  categoriesJson String   @default("{}")
+  appliedJson    String   @default("{}")
+  notes          String   @default("")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  player         Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  event          Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  coach          User     @relation(fields: [coachId], references: [id], onDelete: Cascade)
+
+  @@unique([playerId, eventId, coachId])
 }
 
 // Status: PRESENT | LATE | EXCUSED | ABSENT

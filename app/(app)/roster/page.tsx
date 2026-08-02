@@ -2,6 +2,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import { PLAYER_STATUS_LABELS } from "@/lib/constants";
 import { formatHeight } from "@/lib/format";
+import { getOvrForPlayers } from "@/lib/ratings/engine";
+import { ratingTier } from "@/lib/ratings/defaults";
 
 const STATUS_BADGES: Record<string, string> = {
   ACTIVE: "bg-green-100 text-green-800",
@@ -24,6 +26,7 @@ export default async function RosterPage(props: {
           : { status: filter.toUpperCase() },
     orderBy: [{ jersey: "asc" }, { lastName: "asc" }],
   });
+  const ovrs = await getOvrForPlayers(players);
 
   const filters = [
     { key: "current", label: "Current" },
@@ -68,6 +71,7 @@ export default async function RosterPage(props: {
               <tr className="text-left text-xs uppercase tracking-wide text-slate-500 border-b border-slate-200">
                 <th className="px-4 py-3">#</th>
                 <th className="px-4 py-3">Name</th>
+                <th className="px-4 py-3">OVR</th>
                 <th className="px-4 py-3">Pos</th>
                 <th className="px-4 py-3">Class</th>
                 <th className="px-4 py-3">Ht / Wt</th>
@@ -90,6 +94,13 @@ export default async function RosterPage(props: {
                     >
                       {p.firstName} {p.lastName}
                     </Link>
+                  </td>
+                  <td className="px-4 py-3">
+                    <span
+                      className={`badge font-bold ${ratingTier(ovrs.get(p.id) ?? 60).bg}`}
+                    >
+                      {ovrs.get(p.id) ?? 60}
+                    </span>
                   </td>
                   <td className="px-4 py-3">{p.positions || "—"}</td>
                   <td className="px-4 py-3">{p.classYear ?? "—"}</td>

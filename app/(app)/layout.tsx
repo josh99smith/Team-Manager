@@ -8,6 +8,7 @@ import { ROLE_LABELS } from "@/lib/constants";
 const NAV_ITEMS = [
   { href: "/", label: "Dashboard" },
   { href: "/roster", label: "Roster" },
+  { href: "/ratings", label: "Ratings" },
   { href: "/calendar", label: "Calendar" },
   { href: "/tasks", label: "Tasks" },
   { href: "/staff", label: "Staff" },

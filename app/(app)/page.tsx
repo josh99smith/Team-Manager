@@ -13,7 +13,9 @@ export default async function DashboardPage() {
   const now = new Date();
   const weekOut = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-  const [nextEvent, weekEvents, openTasks, activeCount, injuredCount] =
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const [nextEvent, weekEvents, openTasks, activeCount, injuredCount, weekHistory] =
     await Promise.all([
       prisma.event.findFirst({
         where: { startsAt: { gte: now } },
@@ -32,7 +34,35 @@ export default async function DashboardPage() {
       }),
       prisma.player.count({ where: { status: "ACTIVE" } }),
       prisma.player.count({ where: { status: "INJURED" } }),
+      prisma.ratingHistory.findMany({
+        where: { attributeId: null, createdAt: { gte: weekAgo } },
+        orderBy: { createdAt: "asc" },
+        include: { player: true },
+      }),
     ]);
+
+  // 7-day OVR movement: first vs latest snapshot per player.
+  const snaps = new Map<
+    string,
+    { name: string; first: number; last: number }
+  >();
+  for (const h of weekHistory) {
+    const existing = snaps.get(h.playerId);
+    if (!existing) {
+      snaps.set(h.playerId, {
+        name: `${h.player.firstName} ${h.player.lastName}`,
+        first: h.value,
+        last: h.value,
+      });
+    } else {
+      existing.last = h.value;
+    }
+  }
+  const movers = [...snaps.entries()]
+    .map(([playerId, s]) => ({ playerId, name: s.name, delta: s.last - s.first, ovr: s.last }))
+    .filter((m) => m.delta !== 0)
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+    .slice(0, 5);
 
   const firstName = session?.user.name?.split(" ")[0] ?? "Coach";
 
@@ -154,6 +184,41 @@ export default async function DashboardPage() {
                 </li>
               ))}
             </ul>
+          )}
+        </div>
+
+        <div className="card p-6 md:col-span-2">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-semibold">Top movers — last 7 days</h2>
+            <Link href="/ratings" className="text-sm text-slate-500 hover:underline">
+              All ratings →
+            </Link>
+          </div>
+          {movers.length === 0 ? (
+            <p className="text-sm text-slate-400">
+              No rating movement yet — grade a practice or game to get things
+              moving.
+            </p>
+          ) : (
+            <div className="flex flex-wrap gap-3">
+              {movers.map((m) => (
+                <Link
+                  key={m.playerId}
+                  href={`/roster/${m.playerId}`}
+                  className="rounded-lg border border-slate-200 px-4 py-2.5 hover:bg-slate-50 flex items-center gap-3"
+                >
+                  <span className="text-sm font-medium">{m.name}</span>
+                  <span className="text-sm font-bold">{m.ovr}</span>
+                  <span
+                    className={`text-sm font-semibold ${
+                      m.delta > 0 ? "text-green-600" : "text-red-600"
+                    }`}
+                  >
+                    {m.delta > 0 ? `▲ +${m.delta}` : `▼ ${m.delta}`}
+                  </span>
+                </Link>
+              ))}
+            </div>
           )}
         </div>
       </div>
