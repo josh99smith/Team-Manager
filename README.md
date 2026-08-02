@@ -54,10 +54,13 @@ See [PLAN.md](./PLAN.md) for the full roadmap.
 
 ## Getting started
 
+You need a Postgres database — a free [Neon](https://neon.tech) project works
+great for both local dev and production.
+
 ```bash
 npm install
-cp .env.example .env      # then set a real AUTH_SECRET
-npx prisma db push        # creates prisma/dev.db (SQLite)
+cp .env.example .env      # set DATABASE_URL (Postgres) and a real AUTH_SECRET
+npx prisma db push        # creates the tables
 npx prisma db seed        # optional: sample roster, events, tasks
 npm run dev
 ```
@@ -66,11 +69,28 @@ Open http://localhost:3000.
 
 - With seed data, sign in as `coach@example.com` / `password123`.
 - Without seed data, the app takes you through first-run setup to create your
-  team and head coach account.
+  team (and pick your sport) and head coach account.
+
+## Deploying (use it on your phone)
+
+The app is a responsive web app with PWA support — once deployed, open it on
+your phone and use "Add to Home Screen" to install it like a native app.
+
+1. Create a free Postgres database at [neon.tech](https://neon.tech) (or use
+   Vercel Postgres) and copy its connection string.
+2. Go to [vercel.com/new](https://vercel.com/new) and import this repository.
+3. Add two environment variables: `DATABASE_URL` (the connection string) and
+   `AUTH_SECRET` (`openssl rand -base64 32`).
+4. Set the Build Command to `npx prisma db push && next build` for the first
+   deploy (or run `npx prisma db push` once locally against the production
+   `DATABASE_URL`), then deploy.
+5. Open the deployed URL, complete first-run setup, and add it to your home
+   screen. Create portal logins from player profiles so players and parents
+   can install it too.
 
 ## Stack
 
 - [Next.js](https://nextjs.org) (App Router) + TypeScript
-- [Prisma](https://prisma.io) + SQLite (swap `datasource` to Postgres for production)
+- [Prisma](https://prisma.io) + PostgreSQL
 - [Tailwind CSS](https://tailwindcss.com)
 - [Auth.js / NextAuth v5](https://authjs.dev) credentials auth
