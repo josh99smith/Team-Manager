@@ -79,6 +79,7 @@ export default async function PlayerPage(props: {
   ]);
   const ovr = computeOvr(ratings, weights);
   const overrides = new Set(overrideRows.map((r) => r.attributeId));
+  const attrNameByKey = new Map(defs.map((d) => [d.key, d.name]));
   const trendPoints = ovrHistory.map((h) => ({
     label: formatShortDate(h.createdAt),
     value: h.value,
@@ -324,7 +325,7 @@ export default async function PlayerPage(props: {
                       {Object.keys(cats).length > 0 &&
                         " · " +
                           Object.entries(cats)
-                            .map(([c, v]) => `${c} ${v}`)
+                            .map(([c, v]) => `${attrNameByKey.get(c) ?? c} ${v}`)
                             .join(", ")}
                     </div>
                     {g.notes && (

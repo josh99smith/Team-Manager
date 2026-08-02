@@ -116,7 +116,7 @@ export type GradeInput = {
   eventId: string;
   coachId: string;
   overall: number | null; // 0-100 quick grade
-  categories: Record<string, number>; // category name -> 0-100
+  skills: Record<string, number>; // attribute key (e.g. "throwAccuracy") -> 0-100
   notes: string;
 };
 
@@ -164,23 +164,19 @@ export async function applyGrade(input: GradeInput) {
   const mult = EVENT_MULTIPLIERS[event.type] ?? 1;
   const applied: Record<string, number> = {};
 
-  // Detailed category grades move every position-relevant attribute in that category.
-  const defsByCategory = new Map<string, AttributeDefinition[]>();
-  for (const d of defs) {
-    if (!defsByCategory.has(d.category)) defsByCategory.set(d.category, []);
-    defsByCategory.get(d.category)!.push(d);
-  }
-  for (const [category, grade] of Object.entries(input.categories)) {
-    for (const def of defsByCategory.get(category) ?? []) {
-      if (!weights.has(def.id)) continue; // only attributes that matter for the position
-      const current = ratings.get(def.id) ?? DEFAULT_RATING;
-      const delta = clamp(
-        Math.round(((grade - current) / GRADE_SENSITIVITY) * mult),
-        -MAX_DELTA_PER_EVENT,
-        MAX_DELTA_PER_EVENT
-      );
-      if (delta !== 0) applied[def.id] = (applied[def.id] ?? 0) + delta;
-    }
+  // Each skill grade adjusts exactly that attribute: grading above the
+  // player's current rating pushes it up, below pulls it down.
+  const defsByKey = new Map(defs.map((d) => [d.key, d]));
+  for (const [attrKey, grade] of Object.entries(input.skills)) {
+    const def = defsByKey.get(attrKey);
+    if (!def) continue;
+    const current = ratings.get(def.id) ?? DEFAULT_RATING;
+    const delta = clamp(
+      Math.round(((grade - current) / GRADE_SENSITIVITY) * mult),
+      -MAX_DELTA_PER_EVENT,
+      MAX_DELTA_PER_EVENT
+    );
+    if (delta !== 0) applied[def.id] = (applied[def.id] ?? 0) + delta;
   }
 
   // Quick overall grade gives a small nudge to effort and awareness.
@@ -238,13 +234,13 @@ export async function applyGrade(input: GradeInput) {
         eventId: input.eventId,
         coachId: input.coachId,
         overall: input.overall,
-        categoriesJson: JSON.stringify(input.categories),
+        categoriesJson: JSON.stringify(input.skills),
         appliedJson: JSON.stringify(applied),
         notes: input.notes,
       },
       update: {
         overall: input.overall,
-        categoriesJson: JSON.stringify(input.categories),
+        categoriesJson: JSON.stringify(input.skills),
         appliedJson: JSON.stringify(applied),
         notes: input.notes,
       },

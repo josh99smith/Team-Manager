@@ -9,9 +9,11 @@ import { AttendanceGrid } from "@/components/attendance-grid";
 import { ConfirmButton } from "@/components/confirm-button";
 import { GradeSheet, type GradeRowData } from "@/components/grade-sheet";
 import { StatBook } from "@/components/stat-book";
-import { getOvrForPlayers } from "@/lib/ratings/engine";
+import { getOvrForPlayers, getAttributeDefs } from "@/lib/ratings/engine";
 import { getTeamPreset } from "@/lib/team";
-import { primaryPosition } from "@/lib/ratings/defaults";
+import { primaryPosition, DEFAULT_RATING } from "@/lib/ratings/defaults";
+
+const GRADED_SKILLS_PER_POSITION = 6;
 
 export default async function EventPage(props: {
   params: Promise<{ id: string }>;
@@ -54,6 +56,37 @@ export default async function EventPage(props: {
     ])
   );
 
+  // Position-specific grading skills: the top-weighted attributes for each
+  // player's primary position, with their current rating as the anchor.
+  const [defs, allWeights, allRatings] = await Promise.all([
+    getAttributeDefs(),
+    prisma.positionWeight.findMany(),
+    prisma.playerRating.findMany({
+      where: { playerId: { in: players.map((p) => p.id) } },
+    }),
+  ]);
+  const defById = new Map(defs.map((d) => [d.id, d]));
+  const topSkillsByPosition = new Map<string, { key: string; name: string }[]>();
+  for (const w of allWeights) {
+    if (!topSkillsByPosition.has(w.position)) topSkillsByPosition.set(w.position, []);
+  }
+  for (const position of topSkillsByPosition.keys()) {
+    const top = allWeights
+      .filter((w) => w.position === position)
+      .sort((a, b) => b.weight - a.weight)
+      .slice(0, GRADED_SKILLS_PER_POSITION)
+      .map((w) => defById.get(w.attributeId))
+      .filter((d) => d != null)
+      .map((d) => ({ key: d.key, name: d.name }));
+    topSkillsByPosition.set(position, top);
+  }
+  const ratingsByPlayer = new Map<string, Map<string, number>>();
+  for (const r of allRatings) {
+    if (!ratingsByPlayer.has(r.playerId)) ratingsByPlayer.set(r.playerId, new Map());
+    ratingsByPlayer.get(r.playerId)!.set(r.attributeId, r.value);
+  }
+  const defIdByKey = new Map(defs.map((d) => [d.key, d.id]));
+
   const gradablePlayers: GradeRowData[] = (
     attendedIds.size > 0 ? players.filter((p) => attendedIds.has(p.id)) : players
   ).map((p) => {
@@ -64,6 +97,12 @@ export default async function EventPage(props: {
       .filter((g) => g.playerId === p.id && g.coachId !== session?.user.id)
       .map((g) => ({ coach: g.coach.name, overall: g.overall, notes: g.notes }));
     const pos = primaryPosition(p.positions);
+    const myRatings = ratingsByPlayer.get(p.id);
+    const skills = (topSkillsByPosition.get(pos) ?? []).map((s) => ({
+      ...s,
+      current:
+        myRatings?.get(defIdByKey.get(s.key) ?? "") ?? DEFAULT_RATING,
+    }));
     return {
       id: p.id,
       name: `${p.firstName} ${p.lastName}`,
@@ -71,10 +110,7 @@ export default async function EventPage(props: {
       positions: p.positions,
       primaryPosition: pos,
       ovr: ovrs.get(p.id) ?? 60,
-      categories:
-        preset.gradeCategories[pos] ??
-        Object.values(preset.gradeCategories)[0] ??
-        [],
+      skills,
       mine: mine
         ? {
             overall: mine.overall,

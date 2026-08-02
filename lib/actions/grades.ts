@@ -27,15 +27,15 @@ export async function saveGrade(
     const overall = overallRaw ? clamp100(parseInt(overallRaw, 10)) : null;
     const notes = String(formData.get("notes") ?? "").trim();
 
-    const categories: Record<string, number> = {};
+    const skills: Record<string, number> = {};
     for (const [key, raw] of formData.entries()) {
-      if (!key.startsWith("cat:")) continue;
+      if (!key.startsWith("skill:")) continue;
       const value = String(raw).trim();
-      if (value) categories[key.slice(4)] = clamp100(parseInt(value, 10));
+      if (value) skills[key.slice(6)] = clamp100(parseInt(value, 10));
     }
 
-    if (overall == null && Object.keys(categories).length === 0 && !notes) {
-      return { ok: false, error: "Enter an overall grade, category grades, or a note first." };
+    if (overall == null && Object.keys(skills).length === 0 && !notes) {
+      return { ok: false, error: "Set an overall grade, grade a skill, or add a note first." };
     }
 
     await applyGrade({
@@ -43,7 +43,7 @@ export async function saveGrade(
       eventId,
       coachId: session.user.id,
       overall,
-      categories,
+      skills,
       notes,
     });
 

@@ -69,6 +69,7 @@ export default async function PortalPage() {
 
   const ovr = computeOvr(ratings, weights);
   const tier = ratingTier(ovr);
+  const attrNameByKey = new Map(defs.map((d) => [d.key, d.name]));
   const counts = Object.fromEntries(attendanceCounts.map((c) => [c.status, c._count]));
   const rsvpByEvent = new Map(player.rsvps.map((r) => [r.eventId, r.status]));
 
@@ -206,7 +207,7 @@ export default async function PortalPage() {
                       {Object.keys(cats).length > 0 &&
                         " · " +
                           Object.entries(cats)
-                            .map(([c, v]) => `${c} ${v}`)
+                            .map(([c, v]) => `${attrNameByKey.get(c) ?? c} ${v}`)
                             .join(", ")}
                     </div>
                     {g.notes && (
