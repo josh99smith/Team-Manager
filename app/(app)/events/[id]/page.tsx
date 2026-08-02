@@ -97,20 +97,34 @@ export default async function EventPage(props: {
       .filter((g) => g.playerId === p.id && g.coachId !== session?.user.id)
       .map((g) => ({ coach: g.coach.name, overall: g.overall, notes: g.notes }));
     const pos = primaryPosition(p.positions);
+    const positionList = p.positions.split(",").filter(Boolean);
+    if (positionList.length === 0) positionList.push(pos);
     const myRatings = ratingsByPlayer.get(p.id);
-    const skills = (topSkillsByPosition.get(pos) ?? []).map((s) => ({
+
+    // Union of skills across every position this player plays, deduped by
+    // attribute key (rating is the same regardless of which tab shows it).
+    const skillsByPosition: Record<string, string[]> = {};
+    const seen = new Map<string, { key: string; name: string }>();
+    for (const position of positionList) {
+      const top = topSkillsByPosition.get(position) ?? [];
+      skillsByPosition[position] = top.map((s) => s.key);
+      for (const s of top) if (!seen.has(s.key)) seen.set(s.key, s);
+    }
+    const skills = [...seen.values()].map((s) => ({
       ...s,
-      current:
-        myRatings?.get(defIdByKey.get(s.key) ?? "") ?? DEFAULT_RATING,
+      current: myRatings?.get(defIdByKey.get(s.key) ?? "") ?? DEFAULT_RATING,
     }));
+
     return {
       id: p.id,
       name: `${p.firstName} ${p.lastName}`,
       jersey: p.jersey,
       positions: p.positions,
       primaryPosition: pos,
+      positionList,
       ovr: ovrs.get(p.id) ?? 60,
       skills,
+      skillsByPosition,
       mine: mine
         ? {
             overall: mine.overall,

@@ -80,11 +80,13 @@ export type GradeRowData = {
   jersey: number | null;
   positions: string;
   primaryPosition: string;
+  positionList: string[]; // every position this player plays, e.g. ["WR", "CB"]
   ovr: number;
-  skills: SkillSpec[];
+  skills: SkillSpec[]; // union of skills across all their positions, deduped
+  skillsByPosition: Record<string, string[]>; // position -> skill keys to show under that tab
   mine: {
     overall: number | null;
-    cats: Record<string, number>; // attribute key -> 0-100
+    cats: Record<string, number>; // attribute key -> nudge step
     notes: string;
   } | null;
   others: { coach: string; overall: number | null; notes: string }[];
@@ -119,6 +121,11 @@ function GradeRow({
     { ok: false, error: null }
   );
   const tier = ratingTier(p.ovr);
+  const multiPosition = p.positionList.length > 1;
+  const [activePosition, setActivePosition] = useState(
+    p.positionList[0] ?? p.primaryPosition
+  );
+  const visibleSkillKeys = new Set(p.skillsByPosition[activePosition] ?? []);
 
   // Overall grade: slider + letter buttons, optional until touched
   const [overall, setOverall] = useState<number | null>(p.mine?.overall ?? null);
@@ -157,7 +164,7 @@ function GradeRow({
             {p.jersey ?? "—"}
           </span>
           <span className="font-medium text-sm truncate">{p.name}</span>
-          <span className="text-xs text-slate-400">{p.primaryPosition}</span>
+          <span className="text-xs text-slate-400">{p.positionList.join(", ")}</span>
           <span className={`badge ${tier.bg}`}>{p.ovr} OVR</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
@@ -246,14 +253,52 @@ function GradeRow({
           {/* Position-specific skill nudges */}
           {p.skills.length > 0 && (
             <div>
-              <span className="label">
-                {p.primaryPosition} skills{" "}
-                <span className="normal-case font-normal text-slate-400">
-                  — tap ▲ / ▼ to move a skill by 1 or 2 points
+              <div className="flex items-center justify-between flex-wrap gap-2 mb-1.5">
+                <span className="label mb-0">
+                  {activePosition} skills{" "}
+                  <span className="normal-case font-normal text-slate-400">
+                    — tap ▲ / ▼ to move a skill by 1 or 2 points
+                  </span>
                 </span>
-              </span>
+                {multiPosition && (
+                  <div className="flex gap-1">
+                    {p.positionList.map((pos) => (
+                      <button
+                        key={pos}
+                        type="button"
+                        onClick={() => setActivePosition(pos)}
+                        className={`rounded-md border px-2.5 py-1 text-xs font-semibold cursor-pointer transition-colors ${
+                          activePosition === pos
+                            ? "bg-slate-900 text-white border-slate-900"
+                            : "border-slate-300 bg-white text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {pos}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              {multiPosition && (
+                <p className="text-xs text-slate-400 mb-2">
+                  Grading as {activePosition} — nudges made under any tab all
+                  count toward this one grade for the game.
+                </p>
+              )}
+              {/* Hidden inputs for every graded skill, not just the active tab's,
+                  so switching tabs doesn't drop nudges made elsewhere. */}
+              {p.skills
+                .filter((s) => (steps[s.key] ?? 0) !== 0 && !visibleSkillKeys.has(s.key))
+                .map((s) => (
+                  <input
+                    key={s.key}
+                    type="hidden"
+                    name={`skill:${s.key}`}
+                    value={steps[s.key]}
+                  />
+                ))}
               <div className="space-y-1.5 mt-1.5">
-                {p.skills.map((s) => {
+                {p.skills.filter((s) => visibleSkillKeys.has(s.key)).map((s) => {
                   const step = steps[s.key] ?? 0;
                   return (
                     <div key={s.key} className="flex items-center justify-between gap-3">
