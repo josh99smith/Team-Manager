@@ -321,24 +321,31 @@ export async function applyArchetype(playerId: string, archetypeKey: string) {
   ]);
 }
 
-// Manual coach override of a single attribute.
-export async function overrideAttribute(
+// Manual coach override of one or more attributes at once.
+export async function overrideAttributes(
   playerId: string,
-  attributeId: string,
-  value: number
+  changes: Record<string, number> // attributeId -> new value
 ) {
   const defs = await getAttributeDefs();
+  const validIds = new Set(defs.map((d) => d.id));
+  const entries = Object.entries(changes)
+    .filter(([attributeId]) => validIds.has(attributeId))
+    .map(([attributeId, value]) => ({
+      attributeId,
+      value: clamp(Math.round(value), 0, 99),
+    }));
+  if (entries.length === 0) return;
+
   const player = await prisma.player.findUniqueOrThrow({ where: { id: playerId } });
   const weights = await getWeightsForPosition(primaryPosition(player.positions));
 
-  const next = clamp(Math.round(value), 0, 99);
   const ratings = await getEffectiveRatings(playerId, defs);
   const preOvr = computeOvr(ratings, weights);
   const hasHistory =
     (await prisma.ratingHistory.count({
       where: { playerId, attributeId: null },
     })) > 0;
-  ratings.set(attributeId, next);
+  for (const e of entries) ratings.set(e.attributeId, e.value);
   const ovr = computeOvr(ratings, weights);
 
   await prisma.$transaction([
@@ -355,14 +362,18 @@ export async function overrideAttribute(
             },
           }),
         ]),
-    prisma.playerRating.upsert({
-      where: { playerId_attributeId: { playerId, attributeId } },
-      create: { playerId, attributeId, value: next, isOverride: true },
-      update: { value: next, isOverride: true },
-    }),
-    prisma.ratingHistory.create({
-      data: { playerId, attributeId, value: next, reason: "override" },
-    }),
+    ...entries.map((e) =>
+      prisma.playerRating.upsert({
+        where: { playerId_attributeId: { playerId, attributeId: e.attributeId } },
+        create: { playerId, attributeId: e.attributeId, value: e.value, isOverride: true },
+        update: { value: e.value, isOverride: true },
+      })
+    ),
+    ...entries.map((e) =>
+      prisma.ratingHistory.create({
+        data: { playerId, attributeId: e.attributeId, value: e.value, reason: "override" },
+      })
+    ),
     prisma.ratingHistory.create({
       data: { playerId, attributeId: null, value: ovr, reason: "override" },
     }),

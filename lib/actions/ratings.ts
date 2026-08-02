@@ -3,19 +3,19 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { requireSession, requireHeadCoach } from "@/lib/auth";
-import { overrideAttribute } from "@/lib/ratings/engine";
+import { overrideAttributes } from "@/lib/ratings/engine";
 
-export async function setAttributeRating(
+// Bulk-save manual rating overrides from the slider editor.
+export async function saveRatings(
   playerId: string,
-  attributeId: string,
-  formData: FormData
+  changes: Record<string, number>
 ) {
   await requireSession();
-  const value = parseInt(String(formData.get("value") ?? ""), 10);
-  if (Number.isNaN(value)) return;
-  await overrideAttribute(playerId, attributeId, value);
+  await overrideAttributes(playerId, changes);
   revalidatePath(`/roster/${playerId}`);
   revalidatePath("/ratings");
+  revalidatePath("/depth-chart");
+  revalidatePath("/");
 }
 
 // Replace the weight profile for one position. Entries: attributeId -> weight (0-100).

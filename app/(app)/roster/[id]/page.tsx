@@ -13,7 +13,8 @@ import { ConfirmButton } from "@/components/confirm-button";
 import { auth } from "@/lib/auth";
 import { deletePlayerAccount } from "@/lib/actions/portal";
 import { PortalAccountForm } from "./portal-account";
-import { RatingCard, OvrBadge } from "@/components/rating-card";
+import { OvrBadge } from "@/components/rating-card";
+import { RatingEditor, type RatingGroup } from "@/components/rating-editor";
 import { TrendChart } from "@/components/trend-chart";
 import {
   getAttributeDefs,
@@ -90,6 +91,22 @@ export default async function PlayerPage(props: {
   const statTotals = sumStatLines(statLines);
   const gamesWithStats = statLines.filter((l) => l.statsJson !== "{}").length;
   const seasonStats = preset.statDefs.filter((d) => (statTotals[d.key] ?? 0) !== 0);
+
+  const ratingGroups: RatingGroup[] = [];
+  for (const d of defs) {
+    let group = ratingGroups.find((g) => g.category === d.category);
+    if (!group) {
+      group = { category: d.category, rows: [] };
+      ratingGroups.push(group);
+    }
+    group.rows.push({
+      attributeId: d.id,
+      name: d.name,
+      value: ratings.get(d.id) ?? 60,
+      countsTowardOvr: weights.has(d.id),
+      isOverride: overrides.has(d.id),
+    });
+  }
 
   return (
     <div>
@@ -332,16 +349,10 @@ export default async function PlayerPage(props: {
             </span>
           </h2>
           <span className="text-xs text-slate-400">
-            Edit a value and press ✓ to override. Amber = manually overridden.
+            Drag the sliders, then hit Save ratings.
           </span>
         </div>
-        <RatingCard
-          playerId={player.id}
-          defs={defs}
-          ratings={ratings}
-          weights={weights}
-          overrides={overrides}
-        />
+        <RatingEditor playerId={player.id} groups={ratingGroups} />
       </div>
     </div>
   );
