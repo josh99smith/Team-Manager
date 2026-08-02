@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { saveWeights } from "@/lib/actions/ratings";
+import { SubmitButton } from "@/components/submit-button";
 import { getAttributeDefs } from "@/lib/ratings/engine";
 import { getTeamPreset } from "@/lib/team";
 
@@ -87,9 +88,7 @@ export default async function WeightsPage(props: {
             </div>
           ))}
         </div>
-        <button type="submit" className="btn-primary">
-          Save {position} weights
-        </button>
+        <SubmitButton>Save {position} weights</SubmitButton>
       </form>
     </div>
   );

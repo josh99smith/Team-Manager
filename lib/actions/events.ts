@@ -8,11 +8,18 @@ import { requireSession } from "@/lib/auth";
 
 const MAX_RECURRENCE_INSTANCES = 60;
 
+export type FormState = { error: string | null };
+
+function errorMessage(e: unknown): string {
+  if (e instanceof Error && e.message) return e.message;
+  return "Something went wrong while saving. Please try again.";
+}
+
 function eventDataFromForm(formData: FormData) {
   const str = (key: string) => String(formData.get(key) ?? "").trim();
   const startsAtRaw = str("startsAt");
   const endsAtRaw = str("endsAt");
-  if (!startsAtRaw) throw new Error("Start time is required");
+  if (!startsAtRaw) return null;
 
   return {
     type: str("type") || "PRACTICE",
@@ -25,55 +32,77 @@ function eventDataFromForm(formData: FormData) {
   };
 }
 
-export async function createEvent(formData: FormData) {
-  await requireSession();
-  const data = eventDataFromForm(formData);
+export async function createEvent(
+  _prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  let target: string;
+  try {
+    await requireSession();
+    const data = eventDataFromForm(formData);
+    if (!data) return { error: "A start date and time is required." };
 
-  const repeatDays = formData
-    .getAll("repeatDays")
-    .map((d) => parseInt(String(d), 10));
-  const repeatUntilRaw = String(formData.get("repeatUntil") ?? "").trim();
+    const repeatDays = formData
+      .getAll("repeatDays")
+      .map((d) => parseInt(String(d), 10));
+    const repeatUntilRaw = String(formData.get("repeatUntil") ?? "").trim();
 
-  // Non-recurring: single event.
-  if (repeatDays.length === 0 || !repeatUntilRaw) {
-    const event = await prisma.event.create({ data });
-    revalidatePath("/calendar");
-    redirect(`/events/${event.id}`);
-  }
+    if (repeatDays.length === 0 || !repeatUntilRaw) {
+      // Non-recurring: single event.
+      const event = await prisma.event.create({ data });
+      target = `/events/${event.id}`;
+    } else {
+      // Recurring: materialize one event per matching weekday through the end date.
+      const until = new Date(repeatUntilRaw + "T23:59:59");
+      const durationMs = data.endsAt
+        ? data.endsAt.getTime() - data.startsAt.getTime()
+        : 0;
+      const recurrenceId = randomUUID();
 
-  // Recurring: materialize one event per matching weekday through the end date.
-  const until = new Date(repeatUntilRaw + "T23:59:59");
-  const durationMs = data.endsAt ? data.endsAt.getTime() - data.startsAt.getTime() : 0;
-  const recurrenceId = randomUUID();
+      const instances: (typeof data & { recurrenceId: string })[] = [];
+      const cursor = new Date(data.startsAt);
+      while (cursor <= until && instances.length < MAX_RECURRENCE_INSTANCES) {
+        if (repeatDays.includes(cursor.getDay())) {
+          const startsAt = new Date(cursor);
+          instances.push({
+            ...data,
+            startsAt,
+            endsAt: durationMs ? new Date(startsAt.getTime() + durationMs) : null,
+            recurrenceId,
+          });
+        }
+        cursor.setDate(cursor.getDate() + 1);
+      }
 
-  const instances: (typeof data & { recurrenceId: string })[] = [];
-  const cursor = new Date(data.startsAt);
-  while (cursor <= until && instances.length < MAX_RECURRENCE_INSTANCES) {
-    if (repeatDays.includes(cursor.getDay())) {
-      const startsAt = new Date(cursor);
-      instances.push({
-        ...data,
-        startsAt,
-        endsAt: durationMs ? new Date(startsAt.getTime() + durationMs) : null,
-        recurrenceId,
-      });
+      if (instances.length === 0) {
+        return { error: "No dates match the selected repeat days before the end date." };
+      }
+
+      await prisma.event.createMany({ data: instances });
+      target = "/calendar";
     }
-    cursor.setDate(cursor.getDate() + 1);
+  } catch (e) {
+    return { error: errorMessage(e) };
   }
 
-  if (instances.length === 0) {
-    throw new Error("No dates match the selected repeat days.");
-  }
-
-  await prisma.event.createMany({ data: instances });
   revalidatePath("/calendar");
-  redirect("/calendar");
+  redirect(target);
 }
 
-export async function updateEvent(id: string, formData: FormData) {
-  await requireSession();
-  const data = eventDataFromForm(formData);
-  await prisma.event.update({ where: { id }, data });
+export async function updateEvent(
+  id: string,
+  _prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  try {
+    await requireSession();
+    const data = eventDataFromForm(formData);
+    if (!data) return { error: "A start date and time is required." };
+    await prisma.event.update({ where: { id }, data });
+  } catch (e) {
+    return { error: errorMessage(e) };
+  }
+
   revalidatePath("/calendar");
   revalidatePath(`/events/${id}`);
   redirect(`/events/${id}`);

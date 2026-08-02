@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useActionState } from "react";
 import type { Event } from "@prisma/client";
+import type { FormState } from "@/lib/actions/events";
 import { EVENT_TYPES, EVENT_TYPE_LABELS, WEEKDAYS } from "@/lib/constants";
 
 // Renders as local time for datetime-local inputs
@@ -17,16 +18,17 @@ export function EventForm({
   submitLabel,
   allowRecurrence = false,
 }: {
-  action: (formData: FormData) => Promise<void>;
+  action: (prev: FormState, formData: FormData) => Promise<FormState>;
   event?: Event;
   submitLabel: string;
   allowRecurrence?: boolean;
 }) {
   const [type, setType] = useState(event?.type ?? "PRACTICE");
   const [repeat, setRepeat] = useState(false);
+  const [state, formAction, pending] = useActionState(action, { error: null });
 
   return (
-    <form action={action} className="space-y-6 max-w-2xl">
+    <form action={formAction} className="space-y-6 max-w-2xl">
       <div className="card p-6 space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <div>
@@ -175,8 +177,11 @@ export function EventForm({
         </div>
       )}
 
-      <button type="submit" className="btn-primary">
-        {submitLabel}
+      {state.error && (
+        <p className="text-sm text-red-600 font-medium">⚠ {state.error}</p>
+      )}
+      <button type="submit" disabled={pending} className="btn-primary">
+        {pending ? "Saving…" : submitLabel}
       </button>
     </form>
   );

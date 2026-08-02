@@ -1,5 +1,9 @@
+"use client";
+
+import { useActionState } from "react";
 import type { Player } from "@prisma/client";
 import type { Archetype } from "@/lib/ratings/presets";
+import type { FormState } from "@/lib/actions/players";
 import { PLAYER_STATUSES, PLAYER_STATUS_LABELS } from "@/lib/constants";
 
 export function PlayerForm({
@@ -9,7 +13,7 @@ export function PlayerForm({
   positions,
   archetypes,
 }: {
-  action: (formData: FormData) => Promise<void>;
+  action: (prev: FormState, formData: FormData) => Promise<FormState>;
   player?: Player;
   submitLabel: string;
   positions: string[];
@@ -18,9 +22,10 @@ export function PlayerForm({
   const selectedPositions = new Set(
     (player?.positions ?? "").split(",").filter(Boolean)
   );
+  const [state, formAction, pending] = useActionState(action, { error: null });
 
   return (
-    <form action={action} className="space-y-6 max-w-2xl">
+    <form action={formAction} className="space-y-6 max-w-2xl">
       <div className="card p-6 space-y-4">
         <h2 className="font-semibold">Basics</h2>
         <div className="grid grid-cols-2 gap-4">
@@ -239,8 +244,11 @@ export function PlayerForm({
         />
       </div>
 
-      <button type="submit" className="btn-primary">
-        {submitLabel}
+      {state.error && (
+        <p className="text-sm text-red-600 font-medium">⚠ {state.error}</p>
+      )}
+      <button type="submit" disabled={pending} className="btn-primary">
+        {pending ? "Saving…" : submitLabel}
       </button>
     </form>
   );

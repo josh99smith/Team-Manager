@@ -3,6 +3,7 @@ import { createTask, setTaskStatus, deleteTask } from "@/lib/actions/tasks";
 import { TASK_STATUSES, TASK_STATUS_LABELS, EVENT_TYPE_LABELS } from "@/lib/constants";
 import { formatDate, formatShortDate } from "@/lib/format";
 import { ConfirmButton } from "@/components/confirm-button";
+import { SubmitButton } from "@/components/submit-button";
 
 export default async function TasksPage() {
   const [tasks, users, players, upcomingEvents] = await Promise.all([
@@ -84,9 +85,7 @@ export default async function TasksPage() {
               </select>
             </div>
           </div>
-          <button type="submit" className="btn-primary">
-            Add task
-          </button>
+          <SubmitButton pendingLabel="Adding…">Add task</SubmitButton>
         </form>
       </div>
 

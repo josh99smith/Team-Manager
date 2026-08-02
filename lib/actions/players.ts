@@ -32,29 +32,57 @@ function playerDataFromForm(formData: FormData) {
   };
 }
 
-export async function createPlayer(formData: FormData) {
-  await requireSession();
-  const data = playerDataFromForm(formData);
-  if (!data.firstName || !data.lastName) throw new Error("Name is required");
-  const player = await prisma.player.create({ data });
+export type FormState = { error: string | null };
 
-  const archetype = String(formData.get("archetype") ?? "").trim();
-  if (archetype) await applyArchetype(player.id, archetype);
+function errorMessage(e: unknown): string {
+  if (e instanceof Error && e.message) return e.message;
+  return "Something went wrong while saving. Please try again.";
+}
+
+export async function createPlayer(
+  _prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  let playerId: string;
+  try {
+    await requireSession();
+    const data = playerDataFromForm(formData);
+    if (!data.firstName || !data.lastName) {
+      return { error: "First and last name are required." };
+    }
+    const player = await prisma.player.create({ data });
+    playerId = player.id;
+
+    const archetype = String(formData.get("archetype") ?? "").trim();
+    if (archetype) await applyArchetype(player.id, archetype);
+  } catch (e) {
+    return { error: errorMessage(e) };
+  }
 
   revalidatePath("/roster");
   revalidatePath("/ratings");
-  redirect(`/roster/${player.id}`);
+  redirect(`/roster/${playerId}`);
 }
 
-export async function updatePlayer(id: string, formData: FormData) {
-  await requireSession();
-  const data = playerDataFromForm(formData);
-  if (!data.firstName || !data.lastName) throw new Error("Name is required");
-  await prisma.player.update({ where: { id }, data });
+export async function updatePlayer(
+  id: string,
+  _prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  try {
+    await requireSession();
+    const data = playerDataFromForm(formData);
+    if (!data.firstName || !data.lastName) {
+      return { error: "First and last name are required." };
+    }
+    await prisma.player.update({ where: { id }, data });
 
-  // Optional re-roll: overwrite current ratings with the chosen archetype.
-  const archetype = String(formData.get("archetype") ?? "").trim();
-  if (archetype) await applyArchetype(id, archetype);
+    // Optional re-roll: overwrite current ratings with the chosen archetype.
+    const archetype = String(formData.get("archetype") ?? "").trim();
+    if (archetype) await applyArchetype(id, archetype);
+  } catch (e) {
+    return { error: errorMessage(e) };
+  }
 
   revalidatePath("/roster");
   revalidatePath("/ratings");

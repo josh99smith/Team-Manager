@@ -7,10 +7,11 @@ import { EVENT_TYPE_LABELS, EVENT_TYPE_COLORS } from "@/lib/constants";
 import { formatDateTime, formatTime } from "@/lib/format";
 import { AttendanceGrid } from "@/components/attendance-grid";
 import { ConfirmButton } from "@/components/confirm-button";
-import { GradeSheet } from "@/components/grade-sheet";
+import { GradeSheet, type GradeRowData } from "@/components/grade-sheet";
 import { StatBook } from "@/components/stat-book";
 import { getOvrForPlayers } from "@/lib/ratings/engine";
 import { getTeamPreset } from "@/lib/team";
+import { primaryPosition } from "@/lib/ratings/defaults";
 
 export default async function EventPage(props: {
   params: Promise<{ id: string }>;
@@ -45,21 +46,45 @@ export default async function EventPage(props: {
       .filter((a) => a.status === "PRESENT" || a.status === "LATE")
       .map((a) => a.playerId)
   );
-  const gradablePlayers = (
-    attendedIds.size > 0 ? players.filter((p) => attendedIds.has(p.id)) : players
-  ).map((p) => ({
-    id: p.id,
-    name: `${p.firstName} ${p.lastName}`,
-    jersey: p.jersey,
-    positions: p.positions,
-    ovr: ovrs.get(p.id) ?? 60,
-  }));
-
-  const myGrades = new Map(
-    event.grades
-      .filter((g) => g.coachId === session?.user.id)
-      .map((g) => [g.playerId, g])
+  const preset = await getTeamPreset();
+  const statsByPlayer = new Map(
+    event.statLines.map((s) => [
+      s.playerId,
+      JSON.parse(s.statsJson || "{}") as Record<string, number>,
+    ])
   );
+
+  const gradablePlayers: GradeRowData[] = (
+    attendedIds.size > 0 ? players.filter((p) => attendedIds.has(p.id)) : players
+  ).map((p) => {
+    const mine = event.grades.find(
+      (g) => g.playerId === p.id && g.coachId === session?.user.id
+    );
+    const others = event.grades
+      .filter((g) => g.playerId === p.id && g.coachId !== session?.user.id)
+      .map((g) => ({ coach: g.coach.name, overall: g.overall, notes: g.notes }));
+    const pos = primaryPosition(p.positions);
+    return {
+      id: p.id,
+      name: `${p.firstName} ${p.lastName}`,
+      jersey: p.jersey,
+      positions: p.positions,
+      primaryPosition: pos,
+      ovr: ovrs.get(p.id) ?? 60,
+      categories:
+        preset.gradeCategories[pos] ??
+        Object.values(preset.gradeCategories)[0] ??
+        [],
+      mine: mine
+        ? {
+            overall: mine.overall,
+            cats: JSON.parse(mine.categoriesJson || "{}"),
+            notes: mine.notes,
+          }
+        : null,
+      others,
+    };
+  });
 
   const title =
     event.title ||
@@ -185,13 +210,7 @@ export default async function EventPage(props: {
           {gradablePlayers.length === 0 ? (
             <p className="text-sm text-slate-400">No players to grade.</p>
           ) : (
-            <GradeSheet
-              eventId={event.id}
-              players={gradablePlayers}
-              myGrades={myGrades}
-              allGrades={event.grades}
-              gradeCategories={(await getTeamPreset()).gradeCategories}
-            />
+            <GradeSheet eventId={event.id} players={gradablePlayers} />
           )}
         </div>
       )}
@@ -210,9 +229,14 @@ export default async function EventPage(props: {
           ) : (
             <StatBook
               eventId={event.id}
-              players={gradablePlayers}
-              statLines={event.statLines}
-              statDefs={(await getTeamPreset()).statDefs}
+              players={gradablePlayers.map((p) => ({
+                id: p.id,
+                name: p.name,
+                jersey: p.jersey,
+                positions: p.positions,
+                stats: statsByPlayer.get(p.id) ?? {},
+              }))}
+              statDefs={preset.statDefs}
             />
           )}
         </div>
