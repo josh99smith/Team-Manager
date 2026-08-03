@@ -56,7 +56,7 @@ export default async function WeightsPage(props: {
             href={`/ratings/weights?position=${pos}`}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               pos === position
-                ? "bg-[var(--brand)] text-white"
+                ? "bg-[var(--brand)] text-[var(--brand-ink)]"
                 : "text-slate-600 hover:bg-slate-200"
             }`}
           >

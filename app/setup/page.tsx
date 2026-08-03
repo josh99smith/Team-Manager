@@ -12,7 +12,7 @@ export default async function SetupPage() {
     <main className="min-h-screen flex items-center justify-center p-4">
       <div className="card w-full max-w-md p-8">
         <div
-          className="w-12 h-12 rounded-xl bg-[var(--brand)] text-white flex items-center justify-center text-2xl mx-auto mb-4"
+          className="w-12 h-12 rounded-xl bg-[var(--brand)] text-[var(--brand-ink)] flex items-center justify-center text-2xl mx-auto mb-4"
           aria-hidden
         >
           🏈

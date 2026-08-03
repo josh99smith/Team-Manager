@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { ROLE_LABELS } from "@/lib/constants";
 import { AppHeader } from "@/components/app-header";
+import { buildTeamTheme, themeStyleVars } from "@/lib/theme";
 
 export default async function AppLayout({
   children,
@@ -15,9 +16,13 @@ export default async function AppLayout({
   if (session.user.role === "PLAYER") redirect("/portal");
 
   const team = await prisma.team.findFirst();
+  const theme = buildTeamTheme(team?.primaryColor, team?.secondaryColor);
 
   return (
-    <div className="min-h-screen">
+    <div
+      className="min-h-screen"
+      style={themeStyleVars(theme) as React.CSSProperties}
+    >
       <AppHeader
         teamName={team?.name ?? "Team Manager"}
         season={team?.season ?? ""}

@@ -205,13 +205,13 @@ export default async function DashboardPage() {
           ) : (
             <Link
               href={`/events/${nextEvent.id}`}
-              className="block rounded-lg bg-slate-900 text-white p-4 mb-4 hover:bg-slate-800"
+              className="block rounded-lg bg-[var(--secondary)] text-[var(--secondary-ink)] p-4 mb-4 hover:opacity-90 transition-opacity"
             >
               <div className="flex items-center justify-between gap-2">
                 <span className={`badge ${EVENT_TYPE_COLORS[nextEvent.type] ?? ""}`}>
                   {EVENT_TYPE_LABELS[nextEvent.type] ?? nextEvent.type}
                 </span>
-                <span className="text-xs font-semibold uppercase tracking-wide text-slate-300">
+                <span className="text-xs font-semibold uppercase tracking-wide opacity-70">
                   {countdownLabel(nextEvent.startsAt)}
                 </span>
               </div>
@@ -221,12 +221,12 @@ export default async function DashboardPage() {
                     ? `vs ${nextEvent.opponent}`
                     : EVENT_TYPE_LABELS[nextEvent.type])}
               </div>
-              <div className="text-sm text-slate-300 mt-0.5">
+              <div className="text-sm opacity-80 mt-0.5">
                 {formatDateTime(nextEvent.startsAt)}
                 {nextEvent.location ? ` · ${nextEvent.location}` : ""}
               </div>
               {nextEvent._count.rsvps > 0 && (
-                <div className="text-xs text-slate-400 mt-1.5">
+                <div className="text-xs opacity-60 mt-1.5">
                   {`${nextEvent._count.rsvps} player${nextEvent._count.rsvps === 1 ? "" : "s"} RSVP'd going`}
                 </div>
               )}

@@ -24,10 +24,12 @@ model User {
 }
 
 model Team {
-  id     String @id @default(cuid())
-  name   String
-  sport  String @default("Football")
-  season String @default("")
+  id             String @id @default(cuid())
+  name           String
+  sport          String @default("Football")
+  season         String @default("")
+  primaryColor   String @default("#4f46e5")
+  secondaryColor String @default("#0f172a")
 }
 
 // Status: ACTIVE | INJURED | ARCHIVED

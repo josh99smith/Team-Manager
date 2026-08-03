@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: "/calendar", label: "Calendar", icon: "📅" },
   { href: "/tasks", label: "Tasks", icon: "✅" },
   { href: "/staff", label: "Staff", icon: "🎧" },
+  { href: "/settings", label: "Settings", icon: "⚙️" },
 ];
 
 function isActive(pathname: string, href: string): boolean {
@@ -24,6 +25,9 @@ function isActive(pathname: string, href: string): boolean {
   return pathname.startsWith(href);
 }
 
+// Header surface color is whatever the team picked, so text/borders are
+// tied to --secondary-ink (opacity-scaled) rather than fixed slate shades —
+// that way a light team color still reads correctly.
 export function AppHeader({
   teamName,
   season,
@@ -42,12 +46,14 @@ export function AppHeader({
   useEffect(() => setOpen(false), [pathname]);
 
   return (
-    <header className="bg-slate-900 text-white sticky top-0 z-50">
+    <header
+      className="sticky top-0 z-50 bg-[var(--secondary)] text-[var(--secondary-ink)]"
+    >
       <div className="max-w-6xl mx-auto px-4 flex items-center justify-between h-14 gap-3">
         <Link href="/" className="font-bold text-lg whitespace-nowrap min-w-0 truncate">
           {teamName}
           {season && (
-            <span className="ml-2 text-xs font-normal text-slate-400">{season}</span>
+            <span className="ml-2 text-xs font-normal opacity-60">{season}</span>
           )}
         </Link>
 
@@ -59,8 +65,8 @@ export function AppHeader({
               href={item.href}
               className={`px-3 py-1.5 rounded-md text-sm whitespace-nowrap transition-colors ${
                 isActive(pathname, item.href)
-                  ? "bg-[var(--brand)]/25 text-white font-medium"
-                  : "text-slate-300 hover:text-white hover:bg-slate-800"
+                  ? "bg-[var(--brand)]/25 font-medium"
+                  : "opacity-70 hover:opacity-100 hover:bg-[var(--secondary-ink)]/10"
               }`}
             >
               {item.label}
@@ -71,11 +77,11 @@ export function AppHeader({
         <div className="hidden md:flex items-center gap-3 shrink-0">
           <div className="text-right">
             <div className="text-sm leading-tight">{userName}</div>
-            <div className="text-xs text-slate-400 leading-tight">{roleLabel}</div>
+            <div className="text-xs opacity-60 leading-tight">{roleLabel}</div>
           </div>
           {userName && <Avatar name={userName} size="sm" />}
           <form action={logout}>
-            <button className="text-xs text-slate-400 hover:text-white border border-slate-700 rounded-md px-2.5 py-1.5 cursor-pointer">
+            <button className="text-xs opacity-70 hover:opacity-100 border border-[var(--secondary-ink)]/25 rounded-md px-2.5 py-1.5 cursor-pointer">
               Sign out
             </button>
           </form>
@@ -86,7 +92,7 @@ export function AppHeader({
           onClick={() => setOpen((v) => !v)}
           aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}
-          className="md:hidden shrink-0 rounded-md border border-slate-700 px-3 py-1.5 text-lg leading-none cursor-pointer"
+          className="md:hidden shrink-0 rounded-md border border-[var(--secondary-ink)]/25 px-3 py-1.5 text-lg leading-none cursor-pointer"
         >
           {open ? "✕" : "☰"}
         </button>
@@ -94,7 +100,7 @@ export function AppHeader({
 
       {/* Mobile drawer */}
       {open && (
-        <div className="md:hidden border-t border-slate-800 bg-slate-900 pb-4">
+        <div className="md:hidden border-t border-[var(--secondary-ink)]/15 bg-[var(--secondary)] pb-4">
           <nav className="px-3 pt-2 space-y-1">
             {NAV_ITEMS.map((item) => (
               <Link
@@ -102,8 +108,8 @@ export function AppHeader({
                 href={item.href}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-base ${
                   isActive(pathname, item.href)
-                    ? "bg-[var(--brand)]/25 text-white font-medium"
-                    : "text-slate-300 hover:bg-slate-800"
+                    ? "bg-[var(--brand)]/25 font-medium"
+                    : "opacity-70 hover:bg-[var(--secondary-ink)]/10"
                 }`}
               >
                 <span aria-hidden>{item.icon}</span>
@@ -111,16 +117,16 @@ export function AppHeader({
               </Link>
             ))}
           </nav>
-          <div className="mt-3 mx-3 pt-3 border-t border-slate-800 flex items-center justify-between gap-3">
+          <div className="mt-3 mx-3 pt-3 border-t border-[var(--secondary-ink)]/15 flex items-center justify-between gap-3">
             <div className="px-3 flex items-center gap-3">
               {userName && <Avatar name={userName} size="sm" />}
               <div>
                 <div className="text-sm">{userName}</div>
-                <div className="text-xs text-slate-400">{roleLabel}</div>
+                <div className="text-xs opacity-60">{roleLabel}</div>
               </div>
             </div>
             <form action={logout}>
-              <button className="text-sm text-slate-300 hover:text-white border border-slate-700 rounded-md px-3 py-2 cursor-pointer">
+              <button className="text-sm opacity-70 hover:opacity-100 border border-[var(--secondary-ink)]/25 rounded-md px-3 py-2 cursor-pointer">
                 Sign out
               </button>
             </form>

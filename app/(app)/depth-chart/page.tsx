@@ -56,12 +56,14 @@ export default async function DepthChartPage() {
                       <li
                         key={row.player.id}
                         className={`flex items-center gap-2 rounded-lg px-2 py-1.5 ${
-                          i === 0 ? "bg-slate-900 text-white" : "bg-slate-50"
+                          i === 0
+                            ? "bg-[var(--secondary)] text-[var(--secondary-ink)]"
+                            : "bg-slate-50"
                         }`}
                       >
                         <span
                           className={`text-xs font-bold w-6 text-center shrink-0 ${
-                            i === 0 ? "text-slate-300" : "text-slate-400"
+                            i === 0 ? "opacity-70" : "text-slate-400"
                           }`}
                         >
                           {i + 1}

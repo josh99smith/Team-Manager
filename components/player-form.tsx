@@ -145,7 +145,7 @@ export function PlayerForm({
             {positions.map((pos) => (
               <label
                 key={pos}
-                className="flex items-center gap-1.5 border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm cursor-pointer transition-colors has-checked:bg-[var(--brand)] has-checked:text-white has-checked:border-[var(--brand)]"
+                className="flex items-center gap-1.5 border border-slate-300 rounded-lg px-2.5 py-1.5 text-sm cursor-pointer transition-colors has-checked:bg-[var(--brand)] has-checked:text-[var(--brand-ink)] has-checked:border-[var(--brand)]"
               >
                 <input
                   type="checkbox"

@@ -1,9 +1,13 @@
 @import "tailwindcss";
 
+/* Team-color theme variables — overridden per team via inline style on a
+   wrapping element (see lib/theme.ts); these are the pre-login/setup defaults. */
 :root {
   --brand: #4f46e5;
   --brand-hover: #4338ca;
-  --brand-soft: #eef2ff;
+  --brand-ink: #ffffff;
+  --secondary: #0f172a;
+  --secondary-ink: #ffffff;
 }
 
 body {
@@ -35,7 +39,7 @@ body {
 }
 
 .btn-primary {
-  @apply text-white bg-[var(--brand)] hover:bg-[var(--brand-hover)];
+  @apply text-[var(--brand-ink)] bg-[var(--brand)] hover:bg-[var(--brand-hover)];
 }
 
 .btn-secondary {

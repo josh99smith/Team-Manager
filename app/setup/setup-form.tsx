@@ -1,13 +1,15 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { completeSetup } from "@/lib/actions/auth-actions";
 import { SPORTS } from "@/lib/ratings/presets";
+import { TeamColorPicker } from "@/components/team-color-picker";
 
 export function SetupForm() {
   const [state, formAction, pending] = useActionState(completeSetup, {
     error: null,
   });
+  const [teamName, setTeamName] = useState("");
 
   return (
     <form action={formAction} className="space-y-4">
@@ -16,7 +18,15 @@ export function SetupForm() {
           <label className="label" htmlFor="teamName">
             Team name
           </label>
-          <input id="teamName" name="teamName" required className="input" placeholder="Eastside Eagles" />
+          <input
+            id="teamName"
+            name="teamName"
+            required
+            className="input"
+            placeholder="Eastside Eagles"
+            value={teamName}
+            onChange={(e) => setTeamName(e.target.value)}
+          />
         </div>
         <div>
           <label className="label" htmlFor="season">
@@ -24,6 +34,10 @@ export function SetupForm() {
           </label>
           <input id="season" name="season" className="input" placeholder="2026" />
         </div>
+      </div>
+      <div>
+        <span className="label">Team colors</span>
+        <TeamColorPicker previewName={teamName} />
       </div>
       <div>
         <label className="label" htmlFor="sport">

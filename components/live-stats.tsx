@@ -187,7 +187,7 @@ export function LiveStats({
                 }}
                 className={`rounded-lg border px-4 py-3 text-base font-semibold cursor-pointer ${
                   amount === v
-                    ? "bg-[var(--brand)] text-white border-[var(--brand)]"
+                    ? "bg-[var(--brand)] text-[var(--brand-ink)] border-[var(--brand)]"
                     : "border-slate-300 bg-white hover:bg-slate-50"
                 }`}
               >
@@ -297,7 +297,7 @@ function RolePicker({
             onClick={() => toggle(p.id)}
             className={`rounded-lg border px-3 py-3 flex items-center gap-2 text-left cursor-pointer ${
               selected.includes(p.id)
-                ? "bg-[var(--brand)] text-white border-[var(--brand)]"
+                ? "bg-[var(--brand)] text-[var(--brand-ink)] border-[var(--brand)]"
                 : "border-slate-300 bg-white hover:bg-slate-50"
             }`}
           >

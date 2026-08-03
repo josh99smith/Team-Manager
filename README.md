@@ -18,6 +18,11 @@ See [PLAN.md](./PLAN.md) for the full roadmap.
 - **Multi-sport presets** — Football, Basketball, Soccer, and Baseball, each
   with its own positions, rating attributes, OVR weight profiles, grade-sheet
   categories, and stat book. Picked at first-run setup.
+- **Team colors** — pick your team's primary and secondary colors at setup or
+  later from Settings; they theme the nav bar, primary buttons, links, and
+  highlighted selections app-wide. Very light colors are automatically
+  deepened a touch so text stays readable, and button/header text always
+  picks black or white for the best contrast against whatever color you pick.
 
 ## Phase 2 features
 

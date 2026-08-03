@@ -45,13 +45,13 @@ export default async function CalendarPage(props: {
       <div className="flex gap-1 mb-4">
         <Link
           href="/calendar"
-          className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${!showPast ? "bg-[var(--brand)] text-white font-medium" : "text-slate-600 hover:bg-slate-200"}`}
+          className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${!showPast ? "bg-[var(--brand)] text-[var(--brand-ink)] font-medium" : "text-slate-600 hover:bg-slate-200"}`}
         >
           Upcoming
         </Link>
         <Link
           href="/calendar?view=past"
-          className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${showPast ? "bg-[var(--brand)] text-white font-medium" : "text-slate-600 hover:bg-slate-200"}`}
+          className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${showPast ? "bg-[var(--brand)] text-[var(--brand-ink)] font-medium" : "text-slate-600 hover:bg-slate-200"}`}
         >
           Past
         </Link>

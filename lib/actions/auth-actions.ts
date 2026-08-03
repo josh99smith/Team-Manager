@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { hash } from "bcryptjs";
 import { signIn, signOut } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isValidHex, clampForUse } from "@/lib/theme";
 
 export type FormState = { error: string | null };
 
@@ -45,6 +46,8 @@ export async function completeSetup(
   const name = String(formData.get("name") ?? "").trim();
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const password = String(formData.get("password") ?? "");
+  const primaryColorRaw = String(formData.get("primaryColor") ?? "").trim();
+  const secondaryColorRaw = String(formData.get("secondaryColor") ?? "").trim();
 
   if (!teamName || !name || !email || !password) {
     return { error: "All fields except season are required." };
@@ -54,7 +57,13 @@ export async function completeSetup(
   }
 
   await prisma.team.create({
-    data: { name: teamName, season, sport },
+    data: {
+      name: teamName,
+      season,
+      sport,
+      ...(isValidHex(primaryColorRaw) && { primaryColor: clampForUse(primaryColorRaw) }),
+      ...(isValidHex(secondaryColorRaw) && { secondaryColor: clampForUse(secondaryColorRaw) }),
+    },
   });
   await prisma.user.create({
     data: {

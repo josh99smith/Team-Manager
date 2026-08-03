@@ -56,7 +56,7 @@ export default async function RosterPage(props: {
             href={f.key === "current" ? "/roster" : `/roster?status=${f.key}`}
             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
               filter === f.key
-                ? "bg-[var(--brand)] text-white font-medium"
+                ? "bg-[var(--brand)] text-[var(--brand-ink)] font-medium"
                 : "text-slate-600 hover:bg-slate-200"
             }`}
           >
