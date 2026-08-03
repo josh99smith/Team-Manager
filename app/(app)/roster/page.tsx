@@ -43,9 +43,14 @@ export default async function RosterPage(props: {
       <PageHeader
         title="Roster"
         actions={
-          <Link href="/roster/new" className="btn-primary">
-            + Add player
-          </Link>
+          <>
+            <Link href="/roster/import" className="btn-secondary">
+              Import roster
+            </Link>
+            <Link href="/roster/new" className="btn-primary">
+              + Add player
+            </Link>
+          </>
         }
       />
 

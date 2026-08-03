@@ -6,6 +6,10 @@ See [PLAN.md](./PLAN.md) for the full roadmap.
 
 ## Phase 3 features (current)
 
+- **Roster import** — `/roster/import` bulk-adds players by pasting a roster
+  export (e.g. from Hudl). Maps positions, height/weight, and class year onto
+  our model, flags likely duplicate names, and shows an editable preview
+  table (uncheck anyone) before anything is saved.
 - **Depth chart** — `/depth-chart` groups players by position, ordered by OVR
   by default with manual reordering (and one-click reset back to OVR order).
 - **Player/parent portal** — the head coach can create a read-only portal

@@ -90,6 +90,46 @@ export async function updatePlayer(
   redirect(`/roster/${id}`);
 }
 
+export type ImportPlayerInput = {
+  firstName: string;
+  lastName: string;
+  jersey: number | null;
+  positions: string;
+  heightIn: number | null;
+  weightLb: number | null;
+  classYear: string;
+};
+
+export type ImportState = { error: string | null; count: number };
+
+// Bulk-create players from a parsed roster import (e.g. Hudl export).
+// Rows are pre-validated/filtered client-side; this just persists them.
+export async function bulkImportPlayers(
+  rows: ImportPlayerInput[]
+): Promise<ImportState> {
+  await requireSession();
+
+  const clean = rows.filter((r) => r.firstName.trim() && r.lastName.trim());
+  if (clean.length === 0) return { error: "No valid players to import.", count: 0 };
+
+  await prisma.player.createMany({
+    data: clean.map((r) => ({
+      firstName: r.firstName.trim(),
+      lastName: r.lastName.trim(),
+      jersey: r.jersey,
+      positions: r.positions,
+      heightIn: r.heightIn,
+      weightLb: r.weightLb,
+      classYear: r.classYear || null,
+      status: "ACTIVE",
+    })),
+  });
+
+  revalidatePath("/roster");
+  revalidatePath("/ratings");
+  return { error: null, count: clean.length };
+}
+
 export async function setPlayerStatus(id: string, status: string) {
   await requireSession();
   await prisma.player.update({ where: { id }, data: { status } });
