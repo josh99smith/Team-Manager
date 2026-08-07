@@ -22,6 +22,7 @@ import {
   getEffectiveRatings,
   getWeightsForPosition,
   computeOvr,
+  getRatingChangesByCategory,
 } from "@/lib/ratings/engine";
 import { primaryPosition } from "@/lib/ratings/defaults";
 import { getTeamPreset } from "@/lib/team";
@@ -62,22 +63,24 @@ export default async function PlayerPage(props: {
   );
 
   const defs = await getAttributeDefs();
-  const [ratings, weights, overrideRows, ovrHistory, grades] = await Promise.all([
-    getEffectiveRatings(id, defs),
-    getWeightsForPosition(primaryPosition(player.positions)),
-    prisma.playerRating.findMany({ where: { playerId: id, isOverride: true } }),
-    prisma.ratingHistory.findMany({
-      where: { playerId: id, attributeId: null },
-      orderBy: { createdAt: "asc" },
-      take: 50,
-    }),
-    prisma.grade.findMany({
-      where: { playerId: id },
-      include: { event: true, coach: true },
-      orderBy: { createdAt: "desc" },
-      take: 10,
-    }),
-  ]);
+  const [ratings, weights, overrideRows, ovrHistory, grades, categoryChanges] =
+    await Promise.all([
+      getEffectiveRatings(id, defs),
+      getWeightsForPosition(primaryPosition(player.positions)),
+      prisma.playerRating.findMany({ where: { playerId: id, isOverride: true } }),
+      prisma.ratingHistory.findMany({
+        where: { playerId: id, attributeId: null },
+        orderBy: { createdAt: "asc" },
+        take: 50,
+      }),
+      prisma.grade.findMany({
+        where: { playerId: id },
+        include: { event: true, coach: true },
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      }),
+      getRatingChangesByCategory(id, defs),
+    ]);
   const ovr = computeOvr(ratings, weights);
   const overrides = new Set(overrideRows.map((r) => r.attributeId));
   const attrNameByKey = new Map(defs.map((d) => [d.key, d.name]));
@@ -344,6 +347,67 @@ export default async function PlayerPage(props: {
             </ul>
           )}
         </div>
+      </div>
+
+      <div className="card p-6 mt-6">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h2 className="font-semibold">Rating changes by category</h2>
+          <span className="text-xs text-slate-400">
+            Change since each attribute's earliest recorded rating
+          </span>
+        </div>
+        {(() => {
+          const movedCategories = categoryChanges.filter((c) =>
+            c.attributes.some((a) => a.delta !== 0)
+          );
+          if (movedCategories.length === 0) {
+            return (
+              <p className="text-sm text-slate-400">
+                No rating movement recorded yet — grade this player to start
+                tracking changes.
+              </p>
+            );
+          }
+          return (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {movedCategories.map((c) => (
+                <div key={c.category} className="rounded-lg bg-slate-50 p-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold">{c.category}</h3>
+                    <span
+                      className={`text-sm font-bold ${
+                        c.delta > 0
+                          ? "text-green-600"
+                          : c.delta < 0
+                            ? "text-red-600"
+                            : "text-slate-400"
+                      }`}
+                    >
+                      {c.delta > 0 ? `▲ +${c.delta}` : c.delta < 0 ? `▼ ${c.delta}` : "—"}
+                    </span>
+                  </div>
+                  <ul className="text-sm space-y-1">
+                    {c.attributes
+                      .filter((a) => a.delta !== 0)
+                      .map((a) => (
+                        <li key={a.attributeId} className="flex justify-between gap-2">
+                          <span className="text-slate-600">{a.name}</span>
+                          <span
+                            className={`font-medium ${
+                              a.delta > 0 ? "text-green-600" : "text-red-600"
+                            }`}
+                          >
+                            {a.start} → {a.current} (
+                            {a.delta > 0 ? `+${a.delta}` : a.delta})
+                          </span>
+                        </li>
+                      ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
       </div>
 
       <div className="card p-6 mt-6">

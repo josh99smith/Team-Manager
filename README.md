@@ -40,9 +40,10 @@ See [PLAN.md](./PLAN.md) for the full roadmap.
 - **Grades move ratings** — each grade nudges the position-relevant attributes
   (capped ±2 per event, games count double); a quick overall alone gives a
   small effort/awareness nudge. Re-grading reverts the old adjustment first.
-- **History & trends** — OVR trend chart and recent-grades report card on the
-  player profile; "top movers — last 7 days" on the dashboard and a 7-day
-  column in the ratings grid.
+- **History & trends** — OVR trend chart, recent-grades report card, and a
+  "rating changes by category" breakdown (how much each attribute has moved
+  since it was first recorded) on the player profile; "top movers — last 7
+  days" on the dashboard and a 7-day column in the ratings grid.
 - **Weight profiles** — the head coach can edit each position's attribute
   weights at `/ratings/weights`.
 

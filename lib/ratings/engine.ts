@@ -105,6 +105,75 @@ export async function getOvrForPlayers(
   return result;
 }
 
+export type AttributeChange = {
+  attributeId: string;
+  key: string;
+  name: string;
+  category: string;
+  start: number;
+  current: number;
+  delta: number;
+};
+
+export type CategoryChange = {
+  category: string;
+  delta: number;
+  attributes: AttributeChange[];
+};
+
+// How much each attribute has moved since its earliest recorded value,
+// grouped by category — for the player profile's "rating changes" section.
+export async function getRatingChangesByCategory(
+  playerId: string,
+  defs: AttributeDefinition[]
+): Promise<CategoryChange[]> {
+  const [ratings, historyRows] = await Promise.all([
+    getEffectiveRatings(playerId, defs),
+    prisma.ratingHistory.findMany({
+      where: { playerId, attributeId: { not: null } },
+      orderBy: { createdAt: "asc" },
+      select: { attributeId: true, value: true },
+    }),
+  ]);
+
+  const startByAttr = new Map<string, number>();
+  for (const row of historyRows) {
+    if (row.attributeId && !startByAttr.has(row.attributeId)) {
+      startByAttr.set(row.attributeId, row.value);
+    }
+  }
+
+  const byCategory = new Map<string, AttributeChange[]>();
+  for (const def of defs) {
+    const current = ratings.get(def.id) ?? DEFAULT_RATING;
+    const start = startByAttr.get(def.id) ?? current;
+    if (!byCategory.has(def.category)) byCategory.set(def.category, []);
+    byCategory.get(def.category)!.push({
+      attributeId: def.id,
+      key: def.key,
+      name: def.name,
+      category: def.category,
+      start,
+      current,
+      delta: current - start,
+    });
+  }
+
+  const categories: CategoryChange[] = [...byCategory.entries()].map(
+    ([category, attributes]) => ({
+      category,
+      delta: attributes.reduce((sum, a) => sum + a.delta, 0),
+      attributes: attributes.sort(
+        (a, b) => Math.abs(b.delta) - Math.abs(a.delta) || a.name.localeCompare(b.name)
+      ),
+    })
+  );
+
+  return categories.sort(
+    (a, b) => Math.abs(b.delta) - Math.abs(a.delta) || a.category.localeCompare(b.category)
+  );
+}
+
 export type GradeInput = {
   playerId: string;
   eventId: string;
@@ -178,6 +247,12 @@ export async function applyGrade(input: GradeInput) {
     }
   }
 
+  // Snapshot pre-delta values so first-time-touched attributes can get a
+  // backdated baseline row (mirrors the OVR-level baseline above), otherwise
+  // an attribute's first-ever history point is its post-change value and
+  // "change since baseline" would under-count that first grade.
+  const preValuesByAttr = new Map(ratings);
+
   // New effective values after applying deltas.
   const changed: { attributeId: string; value: number }[] = [];
   for (const [attributeId, delta] of Object.entries(applied)) {
@@ -195,6 +270,32 @@ export async function applyGrade(input: GradeInput) {
 
   const ovr = computeOvr(ratings, weights);
 
+  const touchedAttrIds = Object.keys(applied);
+  const attrsWithHistory = new Set(
+    touchedAttrIds.length
+      ? (
+          await prisma.ratingHistory.findMany({
+            where: { playerId: input.playerId, attributeId: { in: touchedAttrIds } },
+            select: { attributeId: true },
+            distinct: ["attributeId"],
+          })
+        ).map((r) => r.attributeId)
+      : []
+  );
+  const attrBaselineRows = touchedAttrIds
+    .filter((id) => !attrsWithHistory.has(id))
+    .map((attributeId) =>
+      prisma.ratingHistory.create({
+        data: {
+          playerId: input.playerId,
+          attributeId,
+          value: preValuesByAttr.get(attributeId) ?? DEFAULT_RATING,
+          reason: "baseline",
+          createdAt: new Date(Date.now() - 1000),
+        },
+      })
+    );
+
   await prisma.$transaction([
     ...(hasHistory
       ? []
@@ -209,6 +310,7 @@ export async function applyGrade(input: GradeInput) {
             },
           }),
         ]),
+    ...attrBaselineRows,
     prisma.grade.upsert({
       where: {
         playerId_eventId_coachId: {
@@ -329,8 +431,33 @@ export async function overrideAttributes(
     (await prisma.ratingHistory.count({
       where: { playerId, attributeId: null },
     })) > 0;
+  const preValuesByAttr = new Map(ratings);
   for (const e of entries) ratings.set(e.attributeId, e.value);
   const ovr = computeOvr(ratings, weights);
+
+  const touchedAttrIds = entries.map((e) => e.attributeId);
+  const attrsWithHistory = new Set(
+    (
+      await prisma.ratingHistory.findMany({
+        where: { playerId, attributeId: { in: touchedAttrIds } },
+        select: { attributeId: true },
+        distinct: ["attributeId"],
+      })
+    ).map((r) => r.attributeId)
+  );
+  const attrBaselineRows = touchedAttrIds
+    .filter((id) => !attrsWithHistory.has(id))
+    .map((attributeId) =>
+      prisma.ratingHistory.create({
+        data: {
+          playerId,
+          attributeId,
+          value: preValuesByAttr.get(attributeId) ?? DEFAULT_RATING,
+          reason: "baseline",
+          createdAt: new Date(Date.now() - 1000),
+        },
+      })
+    );
 
   await prisma.$transaction([
     ...(hasHistory
@@ -346,6 +473,7 @@ export async function overrideAttributes(
             },
           }),
         ]),
+    ...attrBaselineRows,
     ...entries.map((e) =>
       prisma.playerRating.upsert({
         where: { playerId_attributeId: { playerId, attributeId: e.attributeId } },
