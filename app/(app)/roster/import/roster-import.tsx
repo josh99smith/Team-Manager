@@ -1,14 +1,20 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { parseHudlExport, type ImportRow } from "@/lib/import/hudl";
 import { bulkImportPlayers } from "@/lib/actions/players";
+import { parseRosterPhoto } from "@/lib/actions/ai-import";
+import { compressImageFile } from "@/lib/import/image";
 import { formatHeight } from "@/lib/format";
 
 export function RosterImport() {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [mode, setMode] = useState<"text" | "photo">("text");
   const [text, setText] = useState("");
+  const [file, setFile] = useState<File | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [rows, setRows] = useState<ImportRow[] | null>(null);
   const [duplicateNames, setDuplicateNames] = useState<string[]>([]);
   const [excluded, setExcluded] = useState<Set<string>>(new Set());
@@ -16,6 +22,7 @@ export function RosterImport() {
   const [importError, setImportError] = useState<string | null>(null);
   const [importedCount, setImportedCount] = useState<number | null>(null);
   const [pending, startTransition] = useTransition();
+  const [extracting, startExtracting] = useTransition();
 
   function preview() {
     const result = parseHudlExport(text);
@@ -34,6 +41,43 @@ export function RosterImport() {
     setRows(result.rows);
     setDuplicateNames(result.duplicateNames);
     setExcluded(new Set());
+  }
+
+  function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0] ?? null;
+    setFile(f);
+    setParseError(null);
+    setPreviewUrl(f ? URL.createObjectURL(f) : null);
+  }
+
+  function extractFromPhoto() {
+    if (!file) return;
+    startExtracting(async () => {
+      try {
+        const { base64, mediaType } = await compressImageFile(file);
+        const result = await parseRosterPhoto(base64, mediaType);
+        if (!result.rows) {
+          setParseError(result.error);
+          return;
+        }
+        setParseError(null);
+        setImportedCount(null);
+        setRows(result.rows);
+        setDuplicateNames(result.duplicateNames);
+        // Pre-uncheck players who are already on the roster — leave
+        // within-batch repeats checked for the coach to judge.
+        const existing = new Set(result.existingNames);
+        setExcluded(
+          new Set(
+            result.rows
+              .filter((r) => existing.has(`${r.firstName} ${r.lastName}`))
+              .map((r) => r.key)
+          )
+        );
+      } catch (e) {
+        setParseError(e instanceof Error ? e.message : "Something went wrong reading that photo.");
+      }
+    });
   }
 
   function toggle(key: string) {
@@ -67,6 +111,9 @@ export function RosterImport() {
         setImportedCount(result.count);
         setRows(null);
         setText("");
+        setFile(null);
+        setPreviewUrl(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
         router.refresh();
       }
     });
@@ -78,17 +125,70 @@ export function RosterImport() {
     <div className="space-y-6 max-w-4xl">
       {!rows && (
         <div className="card p-6 space-y-3">
-          <label className="label" htmlFor="hudl-json">
-            Paste exported roster JSON
-          </label>
-          <textarea
-            id="hudl-json"
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={10}
-            placeholder='[{"fullName": "Jane Smith", "lastName": "Smith", "jerseyNumber": "7", "positions": ["WR", "CB"], ...}]'
-            className="input font-mono text-xs"
-          />
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => setMode("text")}
+              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                mode === "text"
+                  ? "bg-[var(--brand)] text-[var(--brand-ink)] font-medium"
+                  : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              Paste text
+            </button>
+            <button
+              type="button"
+              onClick={() => setMode("photo")}
+              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                mode === "photo"
+                  ? "bg-[var(--brand)] text-[var(--brand-ink)] font-medium"
+                  : "text-slate-600 hover:bg-slate-200"
+              }`}
+            >
+              Upload photo
+            </button>
+          </div>
+
+          {mode === "text" ? (
+            <>
+              <label className="label" htmlFor="hudl-json">
+                Paste exported roster JSON
+              </label>
+              <textarea
+                id="hudl-json"
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                rows={10}
+                placeholder='[{"fullName": "Jane Smith", "lastName": "Smith", "jerseyNumber": "7", "positions": ["WR", "CB"], ...}]'
+                className="input font-mono text-xs"
+              />
+            </>
+          ) : (
+            <>
+              <label className="label" htmlFor="roster-photo">
+                Upload or snap a photo of the roster
+              </label>
+              <input
+                ref={fileInputRef}
+                id="roster-photo"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                onChange={onFileChange}
+                className="input"
+              />
+              {previewUrl && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={previewUrl}
+                  alt="Selected roster photo"
+                  className="max-h-64 rounded-lg border border-slate-200"
+                />
+              )}
+            </>
+          )}
+
           {parseError && (
             <p className="text-sm text-red-600 font-medium">⚠ {parseError}</p>
           )}
@@ -99,17 +199,28 @@ export function RosterImport() {
               <a href="/roster" className="link">
                 roster
               </a>
-              , or paste another batch below.
+              , or import another batch below.
             </p>
           )}
-          <button
-            type="button"
-            onClick={preview}
-            disabled={!text.trim()}
-            className="btn-primary"
-          >
-            Preview import
-          </button>
+          {mode === "text" ? (
+            <button
+              type="button"
+              onClick={preview}
+              disabled={!text.trim()}
+              className="btn-primary"
+            >
+              Preview import
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={extractFromPhoto}
+              disabled={!file || extracting}
+              className="btn-primary"
+            >
+              {extracting ? "Reading photo…" : "Extract roster"}
+            </button>
+          )}
         </div>
       )}
 

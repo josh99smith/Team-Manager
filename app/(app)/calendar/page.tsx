@@ -36,9 +36,14 @@ export default async function CalendarPage(props: {
       <PageHeader
         title="Calendar"
         actions={
-          <Link href="/events/new" className="btn-primary">
-            + Add event
-          </Link>
+          <>
+            <Link href="/calendar/import" className="btn-secondary">
+              Import schedule
+            </Link>
+            <Link href="/events/new" className="btn-primary">
+              + Add event
+            </Link>
+          </>
         }
       />
 

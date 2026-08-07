@@ -6,6 +6,14 @@ See [PLAN.md](./PLAN.md) for the full roadmap.
 
 ## Phase 3 features (current)
 
+- **AI photo import** — `/calendar/import` reads a photo of a printed
+  schedule into events (practices, games, scrimmages, meetings, workouts),
+  flagging likely duplicates already on the calendar and time conflicts
+  (against the calendar and within the same photo) before you save anything.
+  `/roster/import` has a matching "Upload photo" mode alongside the Hudl
+  paste import, reading a roster sheet photo into the same editable preview
+  table, with players already on your roster pre-unchecked. Requires an
+  `ANTHROPIC_API_KEY` — see Getting started below.
 - **Roster import** — `/roster/import` bulk-adds players by pasting a roster
   export (e.g. from Hudl). Maps positions, height/weight, and class year onto
   our model, flags likely duplicate names, and shows an editable preview
@@ -89,8 +97,10 @@ your phone and use "Add to Home Screen" to install it like a native app.
 1. Create a free Postgres database at [neon.tech](https://neon.tech) (or use
    Vercel Postgres) and copy its connection string.
 2. Go to [vercel.com/new](https://vercel.com/new) and import this repository.
-3. Add two environment variables: `DATABASE_URL` (the connection string) and
-   `AUTH_SECRET` (`openssl rand -base64 32`).
+3. Add environment variables: `DATABASE_URL` (the connection string) and
+   `AUTH_SECRET` (`openssl rand -base64 32`). Add `ANTHROPIC_API_KEY` (from
+   [console.anthropic.com](https://console.anthropic.com)) too if you want
+   the AI photo import features — everything else works without it.
 4. Set the Build Command to `npx prisma db push && next build` for the first
    deploy (or run `npx prisma db push` once locally against the production
    `DATABASE_URL`), then deploy.
