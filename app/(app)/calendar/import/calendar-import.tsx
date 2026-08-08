@@ -3,11 +3,8 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { compressImageFile } from "@/lib/import/image";
-import {
-  parseSchedulePhoto,
-  bulkImportEvents,
-  type ParsedScheduleRow,
-} from "@/lib/actions/ai-import";
+import { parseSchedulePhoto, bulkImportEvents } from "@/lib/actions/ai-import";
+import type { ParsedScheduleRow } from "@/lib/import/schedule";
 import { EVENT_TYPE_LABELS, EVENT_TYPE_COLORS } from "@/lib/constants";
 
 export function CalendarImport() {

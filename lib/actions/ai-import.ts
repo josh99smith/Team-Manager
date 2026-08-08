@@ -76,8 +76,6 @@ For each event:
 Return every event you can read, even if some fields are uncertain — leave a field empty rather than guessing wildly. Skip section headers, page titles, and anything that isn't an actual scheduled event.`;
 }
 
-export type { ParsedScheduleRow };
-
 export type SchedulePhotoResult =
   | { rows: ParsedScheduleRow[]; error: null }
   | { rows: null; error: string };
