@@ -23,7 +23,7 @@ export async function saveTeamSettings(
     return { error: "Colors must be valid — pick them from the color swatches." };
   }
 
-  const team = await prisma.team.findFirst();
+  const team = await prisma.team.findFirst({ select: { id: true } });
   if (!team) return { error: "No team found." };
 
   await prisma.team.update({
@@ -42,4 +42,31 @@ export async function saveTeamSettings(
   // so bust every cached layout, not just this page.
   revalidatePath("/", "layout");
   return { error: null, ok: true };
+}
+
+export async function saveAnthropicApiKey(
+  _prev: FormState,
+  formData: FormData
+): Promise<FormState> {
+  await requireHeadCoach();
+
+  const key = String(formData.get("anthropicApiKey") ?? "").trim();
+  if (!key) return { error: "Paste an API key first." };
+  if (key.length < 20) return { error: "That doesn't look like a full API key." };
+
+  const team = await prisma.team.findFirst({ select: { id: true } });
+  if (!team) return { error: "No team found." };
+
+  await prisma.team.update({ where: { id: team.id }, data: { anthropicApiKey: key } });
+
+  revalidatePath("/settings");
+  return { error: null, ok: true };
+}
+
+export async function removeAnthropicApiKey(): Promise<void> {
+  await requireHeadCoach();
+  const team = await prisma.team.findFirst({ select: { id: true } });
+  if (!team) return;
+  await prisma.team.update({ where: { id: team.id }, data: { anthropicApiKey: null } });
+  revalidatePath("/settings");
 }

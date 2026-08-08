@@ -13,7 +13,8 @@ See [PLAN.md](./PLAN.md) for the full roadmap.
   `/roster/import` has a matching "Upload photo" mode alongside the Hudl
   paste import, reading a roster sheet photo into the same editable preview
   table, with players already on your roster pre-unchecked. Requires an
-  `ANTHROPIC_API_KEY` — see Getting started below.
+  Anthropic API key — the head coach can paste one on the Settings page, or
+  set an `ANTHROPIC_API_KEY` environment variable (see Getting started below).
 - **Roster import** — `/roster/import` bulk-adds players by pasting a roster
   export (e.g. from Hudl). Maps positions, height/weight, and class year onto
   our model, flags likely duplicate names, and shows an editable preview
@@ -98,12 +99,13 @@ your phone and use "Add to Home Screen" to install it like a native app.
    Vercel Postgres) and copy its connection string.
 2. Go to [vercel.com/new](https://vercel.com/new) and import this repository.
 3. Add environment variables: `DATABASE_URL` (the connection string) and
-   `AUTH_SECRET` (`openssl rand -base64 32`). Add `ANTHROPIC_API_KEY` (from
-   [console.anthropic.com](https://console.anthropic.com)) too if you want
-   the AI photo import features — everything else works without it.
-4. Set the Build Command to `npx prisma db push && next build` for the first
-   deploy (or run `npx prisma db push` once locally against the production
-   `DATABASE_URL`), then deploy.
+   `AUTH_SECRET` (`openssl rand -base64 32`). `ANTHROPIC_API_KEY` (from
+   [console.anthropic.com](https://console.anthropic.com)) is optional — for
+   the AI photo import features, the head coach can paste a key on the
+   Settings page instead, once the app is running.
+4. Set the Build Command to `npx prisma db push && next build` and leave it
+   that way — the schema evolves as features get added, so `prisma db push`
+   needs to run on every deploy, not just the first one.
 5. Open the deployed URL, complete first-run setup, and add it to your home
    screen. Create portal logins from player profiles so players and parents
    can install it too.

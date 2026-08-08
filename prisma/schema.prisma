@@ -24,12 +24,16 @@ model User {
 }
 
 model Team {
-  id             String @id @default(cuid())
+  id             String  @id @default(cuid())
   name           String
-  sport          String @default("Football")
-  season         String @default("")
-  primaryColor   String @default("#4f46e5")
-  secondaryColor String @default("#0f172a")
+  sport          String  @default("Football")
+  season         String  @default("")
+  primaryColor   String  @default("#4f46e5")
+  secondaryColor String  @default("#0f172a")
+  // Powers AI photo import (schedule/roster). Falls back to the
+  // ANTHROPIC_API_KEY env var when unset. Never selected by getTeam() or
+  // any query whose result can reach a client component — see lib/team.ts.
+  anthropicApiKey String?
 }
 
 // Status: ACTIVE | INJURED | ARCHIVED
