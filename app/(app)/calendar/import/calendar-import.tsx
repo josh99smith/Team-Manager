@@ -104,7 +104,6 @@ export function CalendarImport() {
             id="schedule-photo"
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={onFileChange}
             className="input"
           />

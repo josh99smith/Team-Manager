@@ -174,7 +174,6 @@ export function RosterImport() {
                 id="roster-photo"
                 type="file"
                 accept="image/*"
-                capture="environment"
                 onChange={onFileChange}
                 className="input"
               />
